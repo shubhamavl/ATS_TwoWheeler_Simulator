@@ -1,0 +1,668 @@
+﻿<Window x:Class="ATS_TwoWheeler_Simulator.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ATS Two-Wheeler System Simulator" Height="900" Width="1200" 
+        MinWidth="1000" MinHeight="700" WindowStartupLocation="CenterScreen"
+        Background="#FFF5F5F5"
+        Icon="pack://application:,,,/Assets/AVL_Icon.ico">
+    
+    <Window.Resources>
+        <Style x:Key="GroupBoxStyle" TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,0,0,15"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style x:Key="ButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="5,0"/>
+            <Setter Property="MinWidth" Value="100"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#FF2C3E50" Padding="15,10" CornerRadius="6" Margin="0,0,0,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Image Source="pack://application:,,,/Assets/AVL_Logo.jpg"
+                       Width="50" Height="50" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <TextBlock Grid.Column="1" Text="ATS Two-Wheeler System Simulator" 
+                           Foreground="White" FontSize="20" FontWeight="Bold"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Ellipse x:Name="ConnectionStatusIndicator" Width="12" Height="12" 
+                             Fill="#FFE74C3C" VerticalAlignment="Center" Margin="0,0,5,0">
+                        <Ellipse.ToolTip>
+                            <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                <Run Text="Connection Status Indicator" FontWeight="Bold"/>
+                                <LineBreak/>
+                                <Run Text="🔴 Red = Disconnected"/>
+                                <LineBreak/>
+                                <Run Text="🟢 Green = Connected"/>
+                            </TextBlock>
+                        </Ellipse.ToolTip>
+                    </Ellipse>
+                    <TextBlock x:Name="ConnectionStatusText" Text="CAN: Disconnected" 
+                               Foreground="White" VerticalAlignment="Center" Margin="0,0,15,0">
+                        <TextBlock.ToolTip>
+                            <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                <Run Text="Current CAN bus connection status." FontWeight="Bold"/>
+                                <LineBreak/>
+                                <Run Text="Shows connected/disconnected state and adapter type."/>
+                            </TextBlock>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+                    <TextBlock x:Name="VersionText" Text="v0.1.0" 
+                               Foreground="#FFBDC3C7" VerticalAlignment="Center" FontSize="11" Margin="0,0,10,0">
+                        <TextBlock.ToolTip>
+                            <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                <Run Text="Application Version" FontWeight="Bold"/>
+                                <LineBreak/>
+                                <Run x:Name="VersionTooltipText" Text="Version 0.1.0"/>
+                            </TextBlock>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+                    <Button x:Name="CheckUpdatesBtn" Content="Check Updates"
+                            Background="Transparent" BorderThickness="0" Foreground="White"
+                            FontSize="10" Padding="5,2" Cursor="Hand" Click="CheckUpdatesBtn_Click"
+                            VerticalAlignment="Center">
+                        <Button.ToolTip>
+                            <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                <Run Text="Check for application updates from GitHub." FontWeight="Bold"/>
+                                <LineBreak/>
+                                <Run Text="Compares current version with latest GitHub release."/>
+                            </TextBlock>
+                        </Button.ToolTip>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <!-- CAN Adapter Configuration -->
+                <GroupBox Header="CAN Adapter Configuration" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="Adapter Type:" VerticalAlignment="Center" Width="120" FontWeight="SemiBold"/>
+                            <ComboBox x:Name="AdapterTypeCombo" Width="180" Margin="0,0,10,0" SelectionChanged="AdapterTypeCombo_SelectionChanged">
+                                <ComboBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Select how the simulator connects to CAN bus:" FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="• USB-CAN-A Serial: USB-to-CAN adapter via COM port (most common)"/>
+                                        <LineBreak/>
+                                        <Run Text="• PCAN: Peak CAN adapter (requires PCAN hardware)"/>
+                                    </TextBlock>
+                                </ComboBox.ToolTip>
+                                <ComboBoxItem Content="USB-CAN-A Serial" Tag="USB" IsSelected="True"/>
+                                <ComboBoxItem Content="PCAN" Tag="PCAN"/>
+                            </ComboBox>
+                            <ComboBox x:Name="PcanChannelCombo" Width="100" Margin="0,0,10,0" Visibility="Collapsed" SelectionChanged="PcanChannelCombo_SelectionChanged">
+                                <ComboBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Select PCAN channel (USB1-USB8)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Only visible when PCAN adapter is selected."/>
+                                    </TextBlock>
+                                </ComboBox.ToolTip>
+                                <ComboBoxItem Content="USB1" Tag="0x51"/>
+                                <ComboBoxItem Content="USB2" Tag="0x52"/>
+                                <ComboBoxItem Content="USB3" Tag="0x53"/>
+                                <ComboBoxItem Content="USB4" Tag="0x54"/>
+                                <ComboBoxItem Content="USB5" Tag="0x55"/>
+                                <ComboBoxItem Content="USB6" Tag="0x56"/>
+                                <ComboBoxItem Content="USB7" Tag="0x57"/>
+                                <ComboBoxItem Content="USB8" Tag="0x58"/>
+                            </ComboBox>
+                            <ComboBox x:Name="ComPortCombo" Width="150" Margin="0,0,10,0" Visibility="Visible" SelectionChanged="ComPortCombo_SelectionChanged">
+                                <ComboBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Select COM port for USB-CAN-A adapter." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Find your port in Device Manager → Ports (COM &amp; LPT)."/>
+                                        <LineBreak/>
+                                        <Run Text="For VSPE: Select the first port of your virtual pair (e.g., COM10)."/>
+                                    </TextBlock>
+                                </ComboBox.ToolTip>
+                            </ComboBox>
+                            <ComboBox x:Name="BaudRateCombo" Width="120" SelectedIndex="1" SelectionChanged="BaudRateCombo_SelectionChanged">
+                                <ComboBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="CAN bus communication speed (bitrate)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="• 125 kbps: Slow, long distance"/>
+                                        <LineBreak/>
+                                        <Run Text="• 250 kbps: Standard (recommended) ⭐"/>
+                                        <LineBreak/>
+                                        <Run Text="• 500 kbps: Fast, shorter distance"/>
+                                        <LineBreak/>
+                                        <Run Text="• 1 Mbps: Very fast, short distance only"/>
+                                        <LineBreak/>
+                                        <Run Text="Must match the bitrate on your application!"/>
+                                    </TextBlock>
+                                </ComboBox.ToolTip>
+                                <ComboBoxItem Content="125 kbps"/>
+                                <ComboBoxItem Content="250 kbps"/>
+                                <ComboBoxItem Content="500 kbps"/>
+                                <ComboBoxItem Content="1 Mbps"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <TextBlock x:Name="AdapterHintTxt" Text="USB-CAN-A Serial adapter selected. Uses COM port communication." 
+                                   FontSize="10" Foreground="#FF95A5A6" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Button x:Name="ConnectButton" Content="Connect" Style="{StaticResource ButtonStyle}" 
+                                    Background="#FF27AE60" Click="Connect_Click">
+                                <Button.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Connect to CAN bus using selected adapter." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Status indicator will turn green when connected."/>
+                                        <LineBreak/>
+                                        <Run Text="Make sure your adapter is connected and COM port is correct!"/>
+                                    </TextBlock>
+                                </Button.ToolTip>
+                            </Button>
+                            <Button x:Name="DisconnectButton" Content="Disconnect" Style="{StaticResource ButtonStyle}" 
+                                    Background="#FFE74C3C" Click="Disconnect_Click" IsEnabled="False">
+                                <Button.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Disconnect from CAN bus and stop all streams." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="All active data streams will be stopped."/>
+                                    </TextBlock>
+                                </Button.ToolTip>
+                            </Button>
+                        </StackPanel>
+                        <TextBlock x:Name="AdapterStatusText" Text="Not connected" 
+                                   FontSize="10" Foreground="#FF95A5A6"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- ADC Configuration -->
+                <GroupBox Header="ADC Configuration (Total Weight - All 4 Channels)" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <TextBlock Text="Total Weight ADC (Ch0+Ch1+Ch2+Ch3)" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,10" Foreground="#FF6C757D" FontStyle="Italic">
+                            <Run Text="The simulator sums all 4 channels (Ch0+Ch1+Ch2+Ch3) to generate total weight ADC values." FontWeight="Bold"/>
+                            <LineBreak/>
+                            <Run Text="Internal mode: Range 0-16380 (4 × 4095)"/>
+                            <LineBreak/>
+                            <Run Text="ADS1115 mode: Range -131072 to +131068 (4 × signed range)"/>
+                        </TextBlock>
+                        <Border Background="#FFF0F0F0" BorderBrush="#FFCCCCCC" BorderThickness="1" 
+                                CornerRadius="4" Padding="10" Margin="0,0,0,10">
+                            <TextBlock>
+                                <Run Text="Current Total ADC: " FontWeight="SemiBold"/>
+                                <Run x:Name="TotalCurrentADCText" Text="0" FontWeight="Bold" Foreground="#FF3498DB"/>
+                            </TextBlock>
+                        </Border>
+                        <TextBlock TextWrapping="Wrap" Foreground="#FF95A5A6" FontSize="10">
+                            <Run Text="Note: Individual channel configuration is available in advanced settings."/>
+                            <LineBreak/>
+                            <Run Text="For most use cases, the default channel distribution (equal across 4 channels) works well."/>
+                        </TextBlock>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- ADC Mode Selection -->
+                <GroupBox Header="ADC Mode" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <RadioButton x:Name="InternalADCRadio" Content="Internal (12-bit, 0-4095)" 
+                                        IsChecked="False" Checked="ADCMode_Changed" Margin="0,0,20,0">
+                                <RadioButton.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Use STM32's internal ADC (12-bit resolution)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Range: 0 to 4095 (unsigned)"/>
+                                        <LineBreak/>
+                                        <Run Text="Use when testing with internal ADC hardware."/>
+                                    </TextBlock>
+                                </RadioButton.ToolTip>
+                            </RadioButton>
+                            <RadioButton x:Name="ADS1115Radio" Content="ADS1115 (16-bit, -32768 to +32767)" 
+                                        IsChecked="True" Checked="ADCMode_Changed">
+                                <RadioButton.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Use external ADS1115 ADC chip (16-bit resolution)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Range: -32768 to +32767 (signed)"/>
+                                        <LineBreak/>
+                                        <Run Text="Higher resolution, better accuracy. Default selection."/>
+                                    </TextBlock>
+                                </RadioButton.ToolTip>
+                            </RadioButton>
+                        </StackPanel>
+                        <TextBlock x:Name="ADCModeText" Text="Current Mode: ADS1115" 
+                                   FontSize="11" Foreground="#FF95A5A6"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Weight Patterns -->
+                <GroupBox Header="Total Weight Pattern" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <TextBlock Text="Total Weight Pattern (All 4 Channels)" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,10" Foreground="#FF6C757D" FontStyle="Italic">
+                            <Run Text="Configure how the total weight (sum of all 4 channels) changes over time." FontWeight="Bold"/>
+                            <LineBreak/>
+                            <Run Text="The simulator distributes weight equally across Ch0, Ch1, Ch2, Ch3, then sums them."/>
+                        </TextBlock>
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="Pattern Type" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <ComboBox x:Name="TotalPatternCombo" SelectionChanged="TotalPattern_SelectionChanged">
+                                <ComboBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Select how total weight changes over time:" FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="• Static: Constant total weight (no change)"/>
+                                        <LineBreak/>
+                                        <Run Text="• Sine Wave: Oscillates up and down"/>
+                                        <LineBreak/>
+                                        <Run Text="• Step Response: Sudden change, then settles"/>
+                                        <LineBreak/>
+                                        <Run Text="• Ramp: Linear increase/decrease"/>
+                                    </TextBlock>
+                                </ComboBox.ToolTip>
+                                <ComboBoxItem Content="Static" Tag="Static" IsSelected="True"/>
+                                <ComboBoxItem Content="Sine Wave" Tag="Sine"/>
+                                <ComboBoxItem Content="Step Response" Tag="Step"/>
+                                <ComboBoxItem Content="Ramp" Tag="Ramp"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="Baseline (kg)" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <TextBox x:Name="TotalBaselineTextBox" Text="0.0" TextChanged="TotalBaseline_TextChanged">
+                                <TextBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Starting or center point for total weight patterns (in kg)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="For Sine Wave: Center of oscillation"/>
+                                        <LineBreak/>
+                                        <Run Text="For Step/Ramp: Starting total weight"/>
+                                    </TextBlock>
+                                </TextBox.ToolTip>
+                            </TextBox>
+                        </StackPanel>
+                        <StackPanel x:Name="TotalAmplitudePanel" Margin="0,0,0,10">
+                            <TextBlock Text="Amplitude (kg)" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <TextBox x:Name="TotalAmplitudeTextBox" Text="200.0" TextChanged="TotalAmplitude_TextChanged">
+                                <TextBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Maximum change from baseline (in kg)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="For Sine Wave: How far above/below baseline"/>
+                                        <LineBreak/>
+                                        <Run Text="For Step/Ramp: Total change amount"/>
+                                    </TextBlock>
+                                </TextBox.ToolTip>
+                            </TextBox>
+                        </StackPanel>
+                        <StackPanel x:Name="TotalFrequencyPanel" Margin="0,0,0,10" Visibility="Collapsed">
+                            <TextBlock Text="Frequency (Hz)" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <TextBox x:Name="TotalFrequencyTextBox" Text="2.0" TextChanged="TotalFrequency_TextChanged">
+                                <TextBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Oscillation frequency for Sine Wave pattern (in Hz)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="1 Hz = 1 complete cycle per second"/>
+                                        <LineBreak/>
+                                        <Run Text="2 Hz = 2 cycles per second (faster)"/>
+                                        <LineBreak/>
+                                        <Run Text="Only used for Sine Wave pattern."/>
+                                    </TextBlock>
+                                </TextBox.ToolTip>
+                            </TextBox>
+                        </StackPanel>
+                        <StackPanel x:Name="TotalDampingPanel" Margin="0,0,0,10" Visibility="Collapsed">
+                            <TextBlock Text="Damping Factor" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <TextBox x:Name="TotalDampingTextBox" Text="0.2" TextChanged="TotalDamping_TextChanged">
+                                <TextBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Settling speed for Step Response pattern." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Lower value = slower settling (more gradual)"/>
+                                        <LineBreak/>
+                                        <Run Text="Higher value = faster settling (quick)"/>
+                                        <LineBreak/>
+                                        <Run Text="Typical: 0.1-0.5. Only used for Step Response."/>
+                                    </TextBlock>
+                                </TextBox.ToolTip>
+                            </TextBox>
+                        </StackPanel>
+                        <StackPanel x:Name="TotalRampPanel" Margin="0,0,0,10" Visibility="Collapsed">
+                            <TextBlock Text="Ramp Duration (sec)" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <TextBox x:Name="TotalRampDurationTextBox" Text="5.0" TextChanged="TotalRampDuration_TextChanged">
+                                <TextBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Time for Ramp pattern to complete (in seconds)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Example: 5.0 = total weight changes over 5 seconds"/>
+                                        <LineBreak/>
+                                        <Run Text="Shorter = faster ramp, Longer = slower ramp"/>
+                                        <LineBreak/>
+                                        <Run Text="Only used for Ramp pattern."/>
+                                    </TextBlock>
+                                </TextBox.ToolTip>
+                            </TextBox>
+                        </StackPanel>
+                        <StackPanel x:Name="TotalStaticPanel" Margin="0,0,0,10">
+                            <TextBlock Text="Static Total Weight (kg)" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                            <TextBox x:Name="TotalStaticWeightTextBox" Text="0.0" TextChanged="TotalStaticWeight_TextChanged">
+                                <TextBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Constant total weight value for Static pattern (in kg)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Total weight stays at this value and doesn't change."/>
+                                        <LineBreak/>
+                                        <Run Text="Use for calibration or steady-state testing."/>
+                                        <LineBreak/>
+                                        <Run Text="Only used for Static pattern."/>
+                                    </TextBlock>
+                                </TextBox.ToolTip>
+                            </TextBox>
+                        </StackPanel>
+                        <Button Content="🔄 Restart Pattern" Style="{StaticResource ButtonStyle}" 
+                                Background="#FF17A2B8" Click="TotalRestartPattern_Click">
+                            <Button.ToolTip>
+                                <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                    <Run Text="Reset the pattern to start from the beginning." FontWeight="Bold"/>
+                                    <LineBreak/>
+                                    <Run Text="Useful for testing repeatability or replaying patterns."/>
+                                    <LineBreak/>
+                                    <Run Text="Pattern time resets to zero."/>
+                                </TextBlock>
+                            </Button.ToolTip>
+                        </Button>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Noise Configuration -->
+                <GroupBox Header="Noise Configuration" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="Noise Level (±ADC counts)" FontWeight="SemiBold" 
+                                       VerticalAlignment="Center" Width="200"/>
+                            <Slider x:Name="NoiseLevelSlider" Width="300" Minimum="0" Maximum="50" 
+                                    Value="5" TickFrequency="1" ValueChanged="NoiseLevel_ValueChanged" 
+                                    Margin="0,0,10,0">
+                                <Slider.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Random variation added to ADC values (simulates sensor noise)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Range: 0 to 50 ADC counts"/>
+                                        <LineBreak/>
+                                        <Run Text="• 0: No noise (unrealistic)"/>
+                                        <LineBreak/>
+                                        <Run Text="• 5: Light noise (typical, recommended) ⭐"/>
+                                        <LineBreak/>
+                                        <Run Text="• 10+: Heavy noise (stress testing)"/>
+                                    </TextBlock>
+                                </Slider.ToolTip>
+                            </Slider>
+                            <TextBlock x:Name="NoiseLevelText" Text="5.0" Width="60" 
+                                       VerticalAlignment="Center" FontWeight="Bold"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Error Injection -->
+                <GroupBox Header="Error Injection (Advanced)" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <CheckBox x:Name="ErrorInjectionEnabled" Content="Enable Error Injection" 
+                                  Checked="ErrorInjection_Changed" Unchecked="ErrorInjection_Changed" 
+                                  Margin="0,0,0,10">
+                            <CheckBox.ToolTip>
+                                <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                    <Run Text="⚠️ ADVANCED: Intentionally introduce errors for testing." FontWeight="Bold"/>
+                                    <LineBreak/>
+                                    <Run Text="Only enable when testing error handling!"/>
+                                    <LineBreak/>
+                                    <Run Text="Disable for normal operation."/>
+                                </TextBlock>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="Error Type:" VerticalAlignment="Center" Width="100" FontWeight="SemiBold"/>
+                            <ComboBox x:Name="ErrorTypeCombo" Width="200" Margin="0,0,10,0" 
+                                      SelectionChanged="ErrorType_SelectionChanged" IsEnabled="False">
+                                <ComboBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Type of error to inject:" FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="• Message Drop: Randomly drop messages"/>
+                                        <LineBreak/>
+                                        <Run Text="• Data Corruption: Change data bytes"/>
+                                        <LineBreak/>
+                                        <Run Text="• Timeout: Delay messages"/>
+                                        <LineBreak/>
+                                        <Run Text="• Invalid CAN ID: Send wrong CAN IDs"/>
+                                    </TextBlock>
+                                </ComboBox.ToolTip>
+                                <ComboBoxItem Content="None" Tag="None" IsSelected="True"/>
+                                <ComboBoxItem Content="Message Drop" Tag="MessageDrop"/>
+                                <ComboBoxItem Content="Data Corruption" Tag="DataCorruption"/>
+                                <ComboBoxItem Content="Timeout" Tag="Timeout"/>
+                                <ComboBoxItem Content="Invalid CAN ID" Tag="InvalidCANID"/>
+                            </ComboBox>
+                            <TextBlock Text="Error Rate:" VerticalAlignment="Center" Width="80" FontWeight="SemiBold"/>
+                            <Slider x:Name="ErrorRateSlider" Width="200" Minimum="0" Maximum="100" 
+                                    Value="1" TickFrequency="1" ValueChanged="ErrorRate_ValueChanged" 
+                                    Margin="0,0,10,0" IsEnabled="False">
+                                <Slider.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Percentage of messages that will have errors." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="1% = 1 in 100 messages will have an error"/>
+                                        <LineBreak/>
+                                        <Run Text="5% = 1 in 20 messages"/>
+                                        <LineBreak/>
+                                        <Run Text="Start with 1% for light testing."/>
+                                    </TextBlock>
+                                </Slider.ToolTip>
+                            </Slider>
+                            <TextBlock x:Name="ErrorRateText" Text="1%" Width="50" 
+                                       VerticalAlignment="Center" FontWeight="Bold"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- System Status -->
+                <GroupBox Header="System Status" Style="{StaticResource GroupBoxStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Margin="0,0,0,5">
+                                <TextBlock.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Current ADC mode being used." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Internal = 12-bit (0-4095), ADS1115 = 16-bit (-32768 to +32767)"/>
+                                    </TextBlock>
+                                </TextBlock.ToolTip>
+                                <Run Text="ADC Mode: " FontWeight="SemiBold"/>
+                                <Run x:Name="StatusADCModeText" Text="ADS1115"/>
+                            </TextBlock>
+                            <TextBlock Margin="0,0,0,5">
+                                <TextBlock.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Total weight data stream status." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Stopped (Red) = No data being sent"/>
+                                        <LineBreak/>
+                                        <Run Text="Active (Green) = Data streaming at shown rate (1Hz, 100Hz, 500Hz, 1kHz)"/>
+                                    </TextBlock>
+                                </TextBlock.ToolTip>
+                                <Run Text="Stream: " FontWeight="SemiBold"/>
+                                <Run x:Name="StatusStreamText" Text="Stopped" Foreground="#FFE74C3C"/>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Margin="0,0,0,5">
+                                <TextBlock.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Simulated firmware version." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Format: Major.Minor.Patch.Build"/>
+                                    </TextBlock>
+                                </TextBlock.ToolTip>
+                                <Run Text="Firmware: " FontWeight="SemiBold"/>
+                                <Run x:Name="StatusFirmwareText" Text="0.1.0.0"/>
+                            </TextBlock>
+                            <TextBlock Margin="0,0,0,5">
+                                <TextBlock.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Total messages sent (TX = Transmit)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Increases when simulator sends data to CAN bus."/>
+                                        <LineBreak/>
+                                        <Run Text="Monitor to verify communication is working."/>
+                                    </TextBlock>
+                                </TextBlock.ToolTip>
+                                <Run Text="Messages TX: " FontWeight="SemiBold"/>
+                                <Run x:Name="StatusTxCountText" Text="0"/>
+                            </TextBlock>
+                            <TextBlock Margin="0,0,0,5">
+                                <TextBlock.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Total messages received (RX = Receive)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Increases when simulator receives commands from your application."/>
+                                        <LineBreak/>
+                                        <Run Text="Monitor to verify your application is sending commands."/>
+                                    </TextBlock>
+                                </TextBlock.ToolTip>
+                                <Run Text="Messages RX: " FontWeight="SemiBold"/>
+                                <Run x:Name="StatusRxCountText" Text="0"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+
+                <!-- Debug: Status/Version Configuration -->
+                <GroupBox Header="Debug: Status/Version Messages" Style="{StaticResource GroupBoxStyle}">
+                    <StackPanel>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,10" Foreground="#FF6C757D" FontStyle="Italic">
+                            <Run Text="Status and Version messages are sent only when requested:" FontWeight="Bold"/>
+                            <LineBreak/>
+                            <Run Text="• Status (0x300): Sent in response to Status Request (0x032)"/>
+                            <LineBreak/>
+                            <Run Text="• Version (0x301): Sent in response to Version Request (0x033)"/>
+                            <LineBreak/>
+                            <Run Text="Edit values below to configure what will be sent when requested."/>
+                        </TextBlock>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <TextBlock Text="System Status:" Width="120" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <ComboBox x:Name="SystemStatusCombo" Width="100" SelectionChanged="SystemStatusCombo_SelectionChanged">
+                                        <ComboBoxItem Content="0 - OK" Tag="0" IsSelected="True"/>
+                                        <ComboBoxItem Content="1 - Warning" Tag="1"/>
+                                        <ComboBoxItem Content="2 - Error" Tag="2"/>
+                                    </ComboBox>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <TextBlock Text="Error Flags:" Width="120" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="ErrorFlagsTextBox" Width="100" Text="0" TextChanged="ErrorFlagsTextBox_TextChanged">
+                                        <TextBox.ToolTip>
+                                            <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                                <Run Text="Error flags byte (0x00 to 0xFF)." FontWeight="Bold"/>
+                                                <LineBreak/>
+                                                <Run Text="Enter as decimal (0-255) or hex (0x00-0xFF)"/>
+                                            </TextBlock>
+                                        </TextBox.ToolTip>
+                                    </TextBox>
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <TextBlock Text="Firmware Major:" Width="120" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="FirmwareMajorTextBox" Width="60" Text="0" TextChanged="FirmwareVersion_TextChanged"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <TextBlock Text="Firmware Minor:" Width="120" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="FirmwareMinorTextBox" Width="60" Text="1" TextChanged="FirmwareVersion_TextChanged"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <TextBlock Text="Firmware Patch:" Width="120" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="FirmwarePatchTextBox" Width="60" Text="0" TextChanged="FirmwareVersion_TextChanged"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <TextBlock Text="Firmware Build:" Width="120" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <TextBox x:Name="FirmwareBuildTextBox" Width="60" Text="0" TextChanged="FirmwareVersion_TextChanged"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="❓ Help" Style="{StaticResource ButtonStyle}" 
+                    Background="#FF9B59B6" Click="HelpButton_Click" Margin="0,0,10,0">
+                <Button.ToolTip>
+                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                        <Run Text="Open User Guide with detailed instructions." FontWeight="Bold"/>
+                        <LineBreak/>
+                        <Run Text="Learn how to use all features step-by-step."/>
+                    </TextBlock>
+                </Button.ToolTip>
+            </Button>
+            <Button Content="Save Configuration" Style="{StaticResource ButtonStyle}" 
+                    Background="#FF27AE60" Click="SaveConfig_Click">
+                <Button.ToolTip>
+                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                        <Run Text="Save all current settings to file." FontWeight="Bold"/>
+                        <LineBreak/>
+                        <Run Text="Saves: ADC settings, patterns, noise, adapter config"/>
+                        <LineBreak/>
+                        <Run Text="Saved to: %LocalAppData%\ATS_TwoWheeler_Simulator\"/>
+                    </TextBlock>
+                </Button.ToolTip>
+            </Button>
+            <Button Content="Load Configuration" Style="{StaticResource ButtonStyle}" 
+                    Background="#FF3498DB" Click="LoadConfig_Click">
+                <Button.ToolTip>
+                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                        <Run Text="Load previously saved settings." FontWeight="Bold"/>
+                        <LineBreak/>
+                        <Run Text="Restores all saved configuration values."/>
+                        <LineBreak/>
+                        <Run Text="Useful for switching between test scenarios."/>
+                    </TextBlock>
+                </Button.ToolTip>
+            </Button>
+            <Button Content="Reset to Defaults" Style="{StaticResource ButtonStyle}" 
+                    Background="#FF95A5A6" Click="ResetDefaults_Click">
+                <Button.ToolTip>
+                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                        <Run Text="⚠️ Reset all settings to factory defaults." FontWeight="Bold"/>
+                        <LineBreak/>
+                        <Run Text="This will lose your current settings!"/>
+                        <LineBreak/>
+                        <Run Text="Use when you want to start fresh."/>
+                    </TextBlock>
+                </Button.ToolTip>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

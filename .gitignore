@@ -1,0 +1,54 @@
+## .NET / Visual Studio / WPF
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+# Build outputs
+publish/
+*.cache
+
+# User-specific files
+*.json
+*.csv
+*.txt
+logs/
+Logs/
+
+# NuGet Packages
+*.nupkg
+**/packages/
+project.lock.json
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+
+# Build logs
+*.log
+*.tlog
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# Visual Studio Code
+.vscode/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
