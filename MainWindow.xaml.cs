@@ -768,18 +768,18 @@ namespace ATS_TwoWheeler_Simulator
             NoiseLevelSlider.Value = config.NoiseLevel;
             NoiseLevelText.Text = config.NoiseLevel.ToString("F1");
 
-            // Total weight pattern settings (using left values as defaults for migration)
-            TotalBaselineTextBox.Text = config.LeftBaseline.ToString("F1");
-            TotalAmplitudeTextBox.Text = config.LeftAmplitude.ToString("F1");
-            TotalFrequencyTextBox.Text = config.LeftFrequency.ToString("F1");
-            TotalDampingTextBox.Text = config.LeftDamping.ToString("F1");
-            TotalRampDurationTextBox.Text = config.LeftRampDuration.ToString("F1");
-            TotalStaticWeightTextBox.Text = config.LeftStaticWeight.ToString("F1");
+            // Total weight pattern settings
+            TotalBaselineTextBox.Text = config.TotalBaseline.ToString("F1");
+            TotalAmplitudeTextBox.Text = config.TotalAmplitude.ToString("F1");
+            TotalFrequencyTextBox.Text = config.TotalFrequency.ToString("F1");
+            TotalDampingTextBox.Text = config.TotalDamping.ToString("F1");
+            TotalRampDurationTextBox.Text = config.TotalRampDuration.ToString("F1");
+            TotalStaticWeightTextBox.Text = config.TotalStaticWeight.ToString("F1");
 
-            // Pattern type selection (using left pattern as default for migration)
+            // Pattern type selection
             foreach (System.Windows.Controls.ComboBoxItem item in TotalPatternCombo.Items)
             {
-                if (item.Tag?.ToString() == config.LeftPattern)
+                if (item.Tag?.ToString() == config.TotalPattern)
                 {
                     TotalPatternCombo.SelectedItem = item;
                     break;

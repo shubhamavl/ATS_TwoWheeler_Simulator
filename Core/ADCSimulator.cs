@@ -3,31 +3,19 @@ using System;
 namespace ATS_TwoWheeler_Simulator.Core
 {
     /// <summary>
-    /// ADC Simulator - Generates ADC values from weight values for total weight (all 4 channels summed)
+    /// ADC Simulator - Generates total ADC values from total weight (simplified for WPF testing)
     /// Supports both Internal (12-bit) and ADS1115 (16-bit) modes
+    /// Direct total calculation - no per-channel simulation needed for WPF
     /// </summary>
     public class ADCSimulator
     {
-        // Channel configuration - Internal (12-bit) mode
-        // Each channel has its own zero and sensitivity, then all are summed
-        private ushort _ch0ZeroADC_Internal = 15;
-        private ushort _ch1ZeroADC_Internal = 15;
-        private ushort _ch2ZeroADC_Internal = 15;
-        private ushort _ch3ZeroADC_Internal = 15;
-        private double _ch0Sensitivity_Internal = 25.0; // ADC counts per kg per channel
-        private double _ch1Sensitivity_Internal = 25.0;
-        private double _ch2Sensitivity_Internal = 25.0;
-        private double _ch3Sensitivity_Internal = 25.0;
+        // Total configuration - Internal (12-bit) mode
+        private ushort _totalZeroADC_Internal = 60; // 4 channels × 15
+        private double _totalSensitivity_Internal = 100.0; // 4 channels × 25.0
 
-        // Channel configuration - ADS1115 (16-bit) mode (signed)
-        private int _ch0ZeroADC_ADS1115 = -15;
-        private int _ch1ZeroADC_ADS1115 = -15;
-        private int _ch2ZeroADC_ADS1115 = -15;
-        private int _ch3ZeroADC_ADS1115 = -15;
-        private double _ch0Sensitivity_ADS1115 = 25.0; // ADC counts per kg per channel
-        private double _ch1Sensitivity_ADS1115 = 25.0;
-        private double _ch2Sensitivity_ADS1115 = 25.0;
-        private double _ch3Sensitivity_ADS1115 = 25.0;
+        // Total configuration - ADS1115 (16-bit) mode (signed)
+        private int _totalZeroADC_ADS1115 = -60; // 4 channels × -15
+        private double _totalSensitivity_ADS1115 = 100.0; // 4 channels × 25.0
 
         // Current mode
         private byte _currentMode = 1; // Default ADS1115
@@ -37,7 +25,7 @@ namespace ATS_TwoWheeler_Simulator.Core
 
         /// <summary>
         /// Calculate total ADC value from total weight (Internal mode)
-        /// Simulates all 4 channels and sums them
+        /// Direct total calculation - no per-channel simulation needed
         /// </summary>
         public ushort CalculateTotalADC(double totalWeightKg, byte adcMode)
         {
@@ -46,17 +34,8 @@ namespace ATS_TwoWheeler_Simulator.Core
                 if (adcMode != 0)
                     throw new ArgumentException("CalculateTotalADC is for Internal mode only. Use CalculateTotalADCSigned for ADS1115.");
 
-                // Distribute weight across 4 channels (equal distribution for simplicity)
-                double weightPerChannel = totalWeightKg / 4.0;
-
-                // Calculate ADC for each channel
-                double ch0ADC = _ch0ZeroADC_Internal + (weightPerChannel * _ch0Sensitivity_Internal);
-                double ch1ADC = _ch1ZeroADC_Internal + (weightPerChannel * _ch1Sensitivity_Internal);
-                double ch2ADC = _ch2ZeroADC_Internal + (weightPerChannel * _ch2Sensitivity_Internal);
-                double ch3ADC = _ch3ZeroADC_Internal + (weightPerChannel * _ch3Sensitivity_Internal);
-
-                // Sum all channels (total weight = Ch0+Ch1+Ch2+Ch3)
-                double totalADC = ch0ADC + ch1ADC + ch2ADC + ch3ADC;
+                // Direct total calculation (no per-channel)
+                double totalADC = _totalZeroADC_Internal + (totalWeightKg * _totalSensitivity_Internal);
 
                 // Clamp to valid range (0-16380 for 4 channels × 4095)
                 if (totalADC < 0) totalADC = 0;
@@ -68,26 +47,16 @@ namespace ATS_TwoWheeler_Simulator.Core
 
         /// <summary>
         /// Calculate total signed ADC value from total weight (ADS1115 mode)
-        /// Simulates all 4 channels and sums them
+        /// Direct total calculation - no per-channel simulation needed
         /// </summary>
         public int CalculateTotalADCSigned(double totalWeightKg)
         {
             lock (_lock)
             {
-                // Distribute weight across 4 channels (equal distribution for simplicity)
-                double weightPerChannel = totalWeightKg / 4.0;
-
-                // Calculate ADC for each channel
-                double ch0ADC = _ch0ZeroADC_ADS1115 + (weightPerChannel * _ch0Sensitivity_ADS1115);
-                double ch1ADC = _ch1ZeroADC_ADS1115 + (weightPerChannel * _ch1Sensitivity_ADS1115);
-                double ch2ADC = _ch2ZeroADC_ADS1115 + (weightPerChannel * _ch2Sensitivity_ADS1115);
-                double ch3ADC = _ch3ZeroADC_ADS1115 + (weightPerChannel * _ch3Sensitivity_ADS1115);
-
-                // Sum all channels (total weight = Ch0+Ch1+Ch2+Ch3)
-                double totalADC = ch0ADC + ch1ADC + ch2ADC + ch3ADC;
+                // Direct total calculation (no per-channel)
+                double totalADC = _totalZeroADC_ADS1115 + (totalWeightKg * _totalSensitivity_ADS1115);
 
                 // Clamp to signed 32-bit range (for 4 channels: -131072 to +131068)
-                // Each channel: -32768 to +32767, so total: -131072 to +131068
                 if (totalADC < -131072) totalADC = -131072;
                 if (totalADC > 131068) totalADC = 131068;
 
@@ -102,102 +71,30 @@ namespace ATS_TwoWheeler_Simulator.Core
             set { lock (_lock) { _currentMode = value; } }
         }
 
-        // Configuration properties - Internal (12-bit) mode
-        public ushort Ch0ZeroADC_Internal
+        // Configuration properties - Internal (12-bit) mode - Total only
+        public ushort TotalZeroADC_Internal
         {
-            get { lock (_lock) { return _ch0ZeroADC_Internal; } }
-            set { lock (_lock) { _ch0ZeroADC_Internal = value; } }
+            get { lock (_lock) { return _totalZeroADC_Internal; } }
+            set { lock (_lock) { _totalZeroADC_Internal = value; } }
         }
 
-        public ushort Ch1ZeroADC_Internal
+        public double TotalSensitivity_Internal
         {
-            get { lock (_lock) { return _ch1ZeroADC_Internal; } }
-            set { lock (_lock) { _ch1ZeroADC_Internal = value; } }
+            get { lock (_lock) { return _totalSensitivity_Internal; } }
+            set { lock (_lock) { _totalSensitivity_Internal = value; } }
         }
 
-        public ushort Ch2ZeroADC_Internal
+        // Configuration properties - ADS1115 (16-bit) mode (signed) - Total only
+        public int TotalZeroADC_ADS1115
         {
-            get { lock (_lock) { return _ch2ZeroADC_Internal; } }
-            set { lock (_lock) { _ch2ZeroADC_Internal = value; } }
+            get { lock (_lock) { return _totalZeroADC_ADS1115; } }
+            set { lock (_lock) { _totalZeroADC_ADS1115 = value; } }
         }
 
-        public ushort Ch3ZeroADC_Internal
+        public double TotalSensitivity_ADS1115
         {
-            get { lock (_lock) { return _ch3ZeroADC_Internal; } }
-            set { lock (_lock) { _ch3ZeroADC_Internal = value; } }
-        }
-
-        public double Ch0Sensitivity_Internal
-        {
-            get { lock (_lock) { return _ch0Sensitivity_Internal; } }
-            set { lock (_lock) { _ch0Sensitivity_Internal = value; } }
-        }
-
-        public double Ch1Sensitivity_Internal
-        {
-            get { lock (_lock) { return _ch1Sensitivity_Internal; } }
-            set { lock (_lock) { _ch1Sensitivity_Internal = value; } }
-        }
-
-        public double Ch2Sensitivity_Internal
-        {
-            get { lock (_lock) { return _ch2Sensitivity_Internal; } }
-            set { lock (_lock) { _ch2Sensitivity_Internal = value; } }
-        }
-
-        public double Ch3Sensitivity_Internal
-        {
-            get { lock (_lock) { return _ch3Sensitivity_Internal; } }
-            set { lock (_lock) { _ch3Sensitivity_Internal = value; } }
-        }
-
-        // Configuration properties - ADS1115 (16-bit) mode (signed)
-        public int Ch0ZeroADC_ADS1115
-        {
-            get { lock (_lock) { return _ch0ZeroADC_ADS1115; } }
-            set { lock (_lock) { _ch0ZeroADC_ADS1115 = value; } }
-        }
-
-        public int Ch1ZeroADC_ADS1115
-        {
-            get { lock (_lock) { return _ch1ZeroADC_ADS1115; } }
-            set { lock (_lock) { _ch1ZeroADC_ADS1115 = value; } }
-        }
-
-        public int Ch2ZeroADC_ADS1115
-        {
-            get { lock (_lock) { return _ch2ZeroADC_ADS1115; } }
-            set { lock (_lock) { _ch2ZeroADC_ADS1115 = value; } }
-        }
-
-        public int Ch3ZeroADC_ADS1115
-        {
-            get { lock (_lock) { return _ch3ZeroADC_ADS1115; } }
-            set { lock (_lock) { _ch3ZeroADC_ADS1115 = value; } }
-        }
-
-        public double Ch0Sensitivity_ADS1115
-        {
-            get { lock (_lock) { return _ch0Sensitivity_ADS1115; } }
-            set { lock (_lock) { _ch0Sensitivity_ADS1115 = value; } }
-        }
-
-        public double Ch1Sensitivity_ADS1115
-        {
-            get { lock (_lock) { return _ch1Sensitivity_ADS1115; } }
-            set { lock (_lock) { _ch1Sensitivity_ADS1115 = value; } }
-        }
-
-        public double Ch2Sensitivity_ADS1115
-        {
-            get { lock (_lock) { return _ch2Sensitivity_ADS1115; } }
-            set { lock (_lock) { _ch2Sensitivity_ADS1115 = value; } }
-        }
-
-        public double Ch3Sensitivity_ADS1115
-        {
-            get { lock (_lock) { return _ch3Sensitivity_ADS1115; } }
-            set { lock (_lock) { _ch3Sensitivity_ADS1115 = value; } }
+            get { lock (_lock) { return _totalSensitivity_ADS1115; } }
+            set { lock (_lock) { _totalSensitivity_ADS1115 = value; } }
         }
     }
 }

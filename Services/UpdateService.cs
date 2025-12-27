@@ -24,11 +24,11 @@ namespace ATS_TwoWheeler_Simulator.Services
         // NOTE: This must match your real GitHub repository so the client can reach Releases API.
         // Update these to match your simulator repository
         private const string RepositoryOwner = "shubhamavl";  // Update with your GitHub username
-        private const string RepositoryName = "SuspensionPCBSimulator";  // Update with your repository name
+        private const string RepositoryName = "ATS_TwoWheeler_Simulator";  // Update with your repository name
 
         // We look for an asset that contains this prefix and has .zip extension.
-        // Example: SuspensionPCBSimulator_Portable_v1.2.0.zip
-        private const string AssetNameSubstring = "SuspensionPCBSimulator_Portable";
+        // Example: ATS_TwoWheeler_Simulator_Portable_v1.2.0.zip
+        private const string AssetNameSubstring = "ATS_TwoWheeler_Simulator_Portable";
         private const string AssetExtension = ".zip";
 
         // Allowed download domains for security (only GitHub)
@@ -358,7 +358,7 @@ namespace ATS_TwoWheeler_Simulator.Services
             {
                 Timeout = TimeSpan.FromSeconds(30)
             };
-            client.DefaultRequestHeaders.Add("User-Agent", "SuspensionPCBSimulator/UpdateChecker");
+            client.DefaultRequestHeaders.Add("User-Agent", "ATS_TwoWheeler_Simulator/UpdateChecker");
             return client;
         }
 

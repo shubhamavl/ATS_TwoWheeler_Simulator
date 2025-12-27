@@ -6,45 +6,77 @@ using ATS_TwoWheeler_Simulator.Core;
 namespace ATS_TwoWheeler_Simulator.Services
 {
     /// <summary>
-    /// Emulator configuration data model
+    /// Emulator configuration data model - Total weight system (no left/right, no per-channel)
     /// </summary>
     public class EmulatorConfig
     {
         public byte ADCMode { get; set; } = 1; // Default ADS1115
         
-        // Internal (12-bit) mode values
-        public ushort LeftZeroADC_Internal { get; set; } = 15;
-        public ushort RightZeroADC_Internal { get; set; } = 15;
-        public double LeftSensitivity_Internal { get; set; } = 100.0;
-        public double RightSensitivity_Internal { get; set; } = 100.0;
+        // Internal (12-bit) mode values - Total only
+        public ushort TotalZeroADC_Internal { get; set; } = 60; // 4 channels × 15
+        public double TotalSensitivity_Internal { get; set; } = 100.0; // 4 channels × 25.0
         
-        // ADS1115 (16-bit) mode values (signed)
-        public int LeftZeroADC_ADS1115 { get; set; } = -15; // Signed, direct value
-        public int RightZeroADC_ADS1115 { get; set; } = -15;
-        public double LeftSensitivity_ADS1115 { get; set; } = 100.0;
-        public double RightSensitivity_ADS1115 { get; set; } = 100.0;
+        // ADS1115 (16-bit) mode values (signed) - Total only
+        public int TotalZeroADC_ADS1115 { get; set; } = -60; // 4 channels × -15
+        public double TotalSensitivity_ADS1115 { get; set; } = 100.0; // 4 channels × 25.0
         
-        // Legacy fields for backward compatibility (will be migrated on load)
-        public ushort LeftZeroADC { get; set; } = 15;
-        public ushort RightZeroADC { get; set; } = 15;
-        public double LeftSensitivity { get; set; } = 100.0;
-        public double RightSensitivity { get; set; } = 100.0;
+        // Total weight pattern (single pattern, not left/right)
         public double NoiseLevel { get; set; } = 5.0;
-        public string LeftPattern { get; set; } = "Static";
-        public string RightPattern { get; set; } = "Static";
-        public double LeftBaseline { get; set; } = 0.0;
-        public double RightBaseline { get; set; } = 0.0;
-        public double LeftAmplitude { get; set; } = 200.0;
-        public double RightAmplitude { get; set; } = 200.0;
-        public double LeftFrequency { get; set; } = 2.0;
-        public double RightFrequency { get; set; } = 2.0;
-        public double LeftDamping { get; set; } = 0.2;
-        public double RightDamping { get; set; } = 0.2;
-        public double LeftRampDuration { get; set; } = 5.0;
-        public double RightRampDuration { get; set; } = 5.0;
-        public double LeftStaticWeight { get; set; } = 0.0;
-        public double RightStaticWeight { get; set; } = 0.0;
+        public string TotalPattern { get; set; } = "Static";
+        public double TotalBaseline { get; set; } = 0.0;
+        public double TotalAmplitude { get; set; } = 200.0;
+        public double TotalFrequency { get; set; } = 2.0;
+        public double TotalDamping { get; set; } = 0.2;
+        public double TotalRampDuration { get; set; } = 5.0;
+        public double TotalStaticWeight { get; set; } = 0.0;
+        
         public FirmwareVersionConfig FirmwareVersion { get; set; } = new FirmwareVersionConfig();
+        
+        // Legacy fields for migration (deprecated, will be removed in future)
+        [System.Obsolete("Use TotalZeroADC_Internal instead")]
+        public ushort LeftZeroADC_Internal { get; set; } = 15;
+        [System.Obsolete("Use TotalZeroADC_Internal instead")]
+        public ushort RightZeroADC_Internal { get; set; } = 15;
+        [System.Obsolete("Use TotalSensitivity_Internal instead")]
+        public double LeftSensitivity_Internal { get; set; } = 100.0;
+        [System.Obsolete("Use TotalSensitivity_Internal instead")]
+        public double RightSensitivity_Internal { get; set; } = 100.0;
+        [System.Obsolete("Use TotalZeroADC_ADS1115 instead")]
+        public int LeftZeroADC_ADS1115 { get; set; } = -15;
+        [System.Obsolete("Use TotalZeroADC_ADS1115 instead")]
+        public int RightZeroADC_ADS1115 { get; set; } = -15;
+        [System.Obsolete("Use TotalSensitivity_ADS1115 instead")]
+        public double LeftSensitivity_ADS1115 { get; set; } = 100.0;
+        [System.Obsolete("Use TotalSensitivity_ADS1115 instead")]
+        public double RightSensitivity_ADS1115 { get; set; } = 100.0;
+        [System.Obsolete("Use TotalPattern instead")]
+        public string LeftPattern { get; set; } = "Static";
+        [System.Obsolete("Use TotalPattern instead")]
+        public string RightPattern { get; set; } = "Static";
+        [System.Obsolete("Use TotalBaseline instead")]
+        public double LeftBaseline { get; set; } = 0.0;
+        [System.Obsolete("Use TotalBaseline instead")]
+        public double RightBaseline { get; set; } = 0.0;
+        [System.Obsolete("Use TotalAmplitude instead")]
+        public double LeftAmplitude { get; set; } = 200.0;
+        [System.Obsolete("Use TotalAmplitude instead")]
+        public double RightAmplitude { get; set; } = 200.0;
+        [System.Obsolete("Use TotalFrequency instead")]
+        public double LeftFrequency { get; set; } = 2.0;
+        [System.Obsolete("Use TotalFrequency instead")]
+        public double RightFrequency { get; set; } = 2.0;
+        [System.Obsolete("Use TotalDamping instead")]
+        public double LeftDamping { get; set; } = 0.2;
+        [System.Obsolete("Use TotalDamping instead")]
+        public double RightDamping { get; set; } = 0.2;
+        [System.Obsolete("Use TotalRampDuration instead")]
+        public double LeftRampDuration { get; set; } = 5.0;
+        [System.Obsolete("Use TotalRampDuration instead")]
+        public double RightRampDuration { get; set; } = 5.0;
+        [System.Obsolete("Use TotalStaticWeight instead")]
+        public double LeftStaticWeight { get; set; } = 0.0;
+        [System.Obsolete("Use TotalStaticWeight instead")]
+        public double RightStaticWeight { get; set; } = 0.0;
     }
 
     /// <summary>
@@ -122,67 +154,54 @@ namespace ATS_TwoWheeler_Simulator.Services
             state.FirmwareVersion = (config.FirmwareVersion.Major, config.FirmwareVersion.Minor,
                                     config.FirmwareVersion.Patch, config.FirmwareVersion.Build);
 
-            // Apply mode-specific values (with backward compatibility)
-            // Internal mode: use provided value or legacy
-            adcSimulator.LeftZeroADC_Internal = config.LeftZeroADC_Internal != 0 ? config.LeftZeroADC_Internal : config.LeftZeroADC;
-            adcSimulator.RightZeroADC_Internal = config.RightZeroADC_Internal != 0 ? config.RightZeroADC_Internal : config.RightZeroADC;
-            adcSimulator.LeftSensitivity_Internal = config.LeftSensitivity_Internal != 0 ? config.LeftSensitivity_Internal : config.LeftSensitivity;
-            adcSimulator.RightSensitivity_Internal = config.RightSensitivity_Internal != 0 ? config.RightSensitivity_Internal : config.RightSensitivity;
+            // Migrate from old Left/Right config if Total properties are not set
+            ushort totalZeroInternal = config.TotalZeroADC_Internal;
+            double totalSensInternal = config.TotalSensitivity_Internal;
+            int totalZeroADS1115 = config.TotalZeroADC_ADS1115;
+            double totalSensADS1115 = config.TotalSensitivity_ADS1115;
             
-            // ADS1115 mode: use provided signed value or migrate from legacy
-            // Check if new signed format is being used (negative values or non-zero)
-            if (config.LeftZeroADC_ADS1115 != 0 || config.LeftZeroADC_ADS1115 < 0)
+            // Migration: If Total properties are default (0 or 60/-60), try to migrate from Left/Right
+            if (totalZeroInternal == 60 && (config.LeftZeroADC_Internal != 15 || config.RightZeroADC_Internal != 15))
             {
-                // New format: signed value provided directly
-                adcSimulator.LeftZeroADC_ADS1115 = config.LeftZeroADC_ADS1115;
-                adcSimulator.RightZeroADC_ADS1115 = config.RightZeroADC_ADS1115;
+                // Migrate from Left/Right: Total = Left + Right (for 2-channel legacy)
+                totalZeroInternal = (ushort)(config.LeftZeroADC_Internal + config.RightZeroADC_Internal);
+                totalSensInternal = config.LeftSensitivity_Internal + config.RightSensitivity_Internal;
             }
-            else
+            
+            if (totalZeroADS1115 == -60 && (config.LeftZeroADC_ADS1115 != -15 || config.RightZeroADC_ADS1115 != -15))
             {
-                // Legacy format: migrate from unsigned
-                // Old system used 32768 to represent 0, or 2048 to represent -30720
-                // New system: use 0 for center, or convert old values
-                if (config.LeftZeroADC == 2048)
-                {
-                    // Old default: convert to new default
-                    adcSimulator.LeftZeroADC_ADS1115 = -15;
-                    adcSimulator.RightZeroADC_ADS1115 = -15;
-                }
-                else if (config.LeftZeroADC == 32768)
-                {
-                    // Old center-zero: convert to 0
-                    adcSimulator.LeftZeroADC_ADS1115 = 0;
-                    adcSimulator.RightZeroADC_ADS1115 = 0;
-                }
-                else
-                {
-                    // Other legacy value: try to convert (assume it was meant to be signed)
-                    adcSimulator.LeftZeroADC_ADS1115 = (int)config.LeftZeroADC - 32768;
-                    adcSimulator.RightZeroADC_ADS1115 = (int)config.RightZeroADC - 32768;
-                }
+                // Migrate from Left/Right: Total = Left + Right (for 2-channel legacy)
+                totalZeroADS1115 = config.LeftZeroADC_ADS1115 + config.RightZeroADC_ADS1115;
+                totalSensADS1115 = config.LeftSensitivity_ADS1115 + config.RightSensitivity_ADS1115;
             }
-            adcSimulator.LeftSensitivity_ADS1115 = config.LeftSensitivity_ADS1115 != 0 ? config.LeftSensitivity_ADS1115 : config.LeftSensitivity;
-            adcSimulator.RightSensitivity_ADS1115 = config.RightSensitivity_ADS1115 != 0 ? config.RightSensitivity_ADS1115 : config.RightSensitivity;
+            
+            // Apply total-only values directly
+            adcSimulator.TotalZeroADC_Internal = totalZeroInternal;
+            adcSimulator.TotalSensitivity_Internal = totalSensInternal;
+            adcSimulator.TotalZeroADC_ADS1115 = totalZeroADS1115;
+            adcSimulator.TotalSensitivity_ADS1115 = totalSensADS1115;
 
             noiseGenerator.NoiseLevel = config.NoiseLevel;
 
-            if (Enum.TryParse<WeightPatternType>(config.LeftPattern, out var leftPattern))
-                patternGenerator.LeftPattern = leftPattern;
-            patternGenerator.LeftBaseline = config.LeftBaseline;
-            patternGenerator.LeftAmplitude = config.LeftAmplitude;
-            patternGenerator.LeftFrequency = config.LeftFrequency;
-            patternGenerator.LeftDamping = config.LeftDamping;
-            patternGenerator.LeftRampDuration = config.LeftRampDuration;
-            patternGenerator.LeftStaticWeight = config.LeftStaticWeight;
-
-            if (Enum.TryParse<WeightPatternType>(config.RightPattern, out var rightPattern))
-                patternGenerator.RightPattern = rightPattern;
-            patternGenerator.RightBaseline = config.RightBaseline;
-            patternGenerator.RightAmplitude = config.RightAmplitude;
-            patternGenerator.RightFrequency = config.RightFrequency;
-            patternGenerator.RightDamping = config.RightDamping;
-            patternGenerator.RightRampDuration = config.RightRampDuration;
-            patternGenerator.RightStaticWeight = config.RightStaticWeight;
+            // Pattern: Use Total pattern, migrate from Left if needed
+            string patternStr = config.TotalPattern;
+            if (string.IsNullOrEmpty(patternStr) || patternStr == "Static")
+            {
+                // Try to migrate from Left pattern
+                if (!string.IsNullOrEmpty(config.LeftPattern))
+                    patternStr = config.LeftPattern;
+            }
+            
+            if (Enum.TryParse<WeightPatternType>(patternStr, out var pattern))
+                patternGenerator.Pattern = pattern;
+            
+            // Use Total properties, migrate from Left if needed
+            patternGenerator.Baseline = config.TotalBaseline != 0.0 ? config.TotalBaseline : config.LeftBaseline;
+            patternGenerator.Amplitude = config.TotalAmplitude != 200.0 ? config.TotalAmplitude : config.LeftAmplitude;
+            patternGenerator.Frequency = config.TotalFrequency != 2.0 ? config.TotalFrequency : config.LeftFrequency;
+            patternGenerator.Damping = config.TotalDamping != 0.2 ? config.TotalDamping : config.LeftDamping;
+            patternGenerator.RampDuration = config.TotalRampDuration != 5.0 ? config.TotalRampDuration : config.LeftRampDuration;
+            patternGenerator.StaticWeight = config.TotalStaticWeight != 0.0 ? config.TotalStaticWeight : config.LeftStaticWeight;
         }
 
         /// <summary>
@@ -194,35 +213,20 @@ namespace ATS_TwoWheeler_Simulator.Services
             var config = new EmulatorConfig
             {
                 ADCMode = state.ADCMode,
-                // Mode-specific values
-                LeftZeroADC_Internal = adcSimulator.LeftZeroADC_Internal,
-                RightZeroADC_Internal = adcSimulator.RightZeroADC_Internal,
-                LeftSensitivity_Internal = adcSimulator.LeftSensitivity_Internal,
-                RightSensitivity_Internal = adcSimulator.RightSensitivity_Internal,
-                LeftZeroADC_ADS1115 = adcSimulator.LeftZeroADC_ADS1115,
-                RightZeroADC_ADS1115 = adcSimulator.RightZeroADC_ADS1115,
-                LeftSensitivity_ADS1115 = adcSimulator.LeftSensitivity_ADS1115,
-                RightSensitivity_ADS1115 = adcSimulator.RightSensitivity_ADS1115,
-                // Legacy values (for backward compatibility)
-                LeftZeroADC = adcSimulator.LeftZeroADC,
-                RightZeroADC = adcSimulator.RightZeroADC,
-                LeftSensitivity = adcSimulator.LeftSensitivity,
-                RightSensitivity = adcSimulator.RightSensitivity,
+                // Export total-only values
+                TotalZeroADC_Internal = adcSimulator.TotalZeroADC_Internal,
+                TotalSensitivity_Internal = adcSimulator.TotalSensitivity_Internal,
+                TotalZeroADC_ADS1115 = adcSimulator.TotalZeroADC_ADS1115,
+                TotalSensitivity_ADS1115 = adcSimulator.TotalSensitivity_ADS1115,
                 NoiseLevel = noiseGenerator.NoiseLevel,
-                LeftPattern = patternGenerator.LeftPattern.ToString(),
-                RightPattern = patternGenerator.RightPattern.ToString(),
-                LeftBaseline = patternGenerator.LeftBaseline,
-                RightBaseline = patternGenerator.RightBaseline,
-                LeftAmplitude = patternGenerator.LeftAmplitude,
-                RightAmplitude = patternGenerator.RightAmplitude,
-                LeftFrequency = patternGenerator.LeftFrequency,
-                RightFrequency = patternGenerator.RightFrequency,
-                LeftDamping = patternGenerator.LeftDamping,
-                RightDamping = patternGenerator.RightDamping,
-                LeftRampDuration = patternGenerator.LeftRampDuration,
-                RightRampDuration = patternGenerator.RightRampDuration,
-                LeftStaticWeight = patternGenerator.LeftStaticWeight,
-                RightStaticWeight = patternGenerator.RightStaticWeight
+                // Export total pattern
+                TotalPattern = patternGenerator.Pattern.ToString(),
+                TotalBaseline = patternGenerator.Baseline,
+                TotalAmplitude = patternGenerator.Amplitude,
+                TotalFrequency = patternGenerator.Frequency,
+                TotalDamping = patternGenerator.Damping,
+                TotalRampDuration = patternGenerator.RampDuration,
+                TotalStaticWeight = patternGenerator.StaticWeight
             };
 
             var (major, minor, patch, build) = state.FirmwareVersion;
