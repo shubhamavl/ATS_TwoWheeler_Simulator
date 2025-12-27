@@ -207,6 +207,102 @@
                                 <Run x:Name="TotalCurrentADCText" Text="0" FontWeight="Bold" Foreground="#FF3498DB"/>
                             </TextBlock>
                         </Border>
+                        
+                        <!-- ADC Configuration Controls -->
+                        <TextBlock Text="Internal ADC (12-bit) Configuration" FontWeight="Bold" FontSize="12" Margin="0,10,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="Zero ADC:" VerticalAlignment="Center" Width="120" FontWeight="SemiBold">
+                                <TextBlock.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="ADC value when weight is 0 kg (tare/offset)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Formula: ADC = Zero + (Weight × Sensitivity)"/>
+                                        <LineBreak/>
+                                        <Run Text="Default: 60 (for 4 channels × 15)"/>
+                                    </TextBlock>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                            <TextBox x:Name="TotalZeroADC_InternalTextBox" Width="100" Margin="0,0,10,0" 
+                                     Text="60" TextChanged="TotalZeroADC_Internal_TextChanged">
+                                <TextBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Enter the zero offset for Internal ADC mode." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Range: 0 to 16380"/>
+                                    </TextBlock>
+                                </TextBox.ToolTip>
+                            </TextBox>
+                            <TextBlock Text="Sensitivity (ADC/kg):" VerticalAlignment="Center" Width="150" FontWeight="SemiBold" Margin="20,0,0,0">
+                                <TextBlock.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="How much ADC changes per kg of weight." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Formula: ADC = Zero + (Weight × Sensitivity)"/>
+                                        <LineBreak/>
+                                        <Run Text="Default: 100.0 (for 4 channels × 25.0)"/>
+                                    </TextBlock>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                            <TextBox x:Name="TotalSensitivity_InternalTextBox" Width="100" 
+                                     Text="100.0" TextChanged="TotalSensitivity_Internal_TextChanged">
+                                <TextBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Enter the sensitivity for Internal ADC mode." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Higher value = more ADC change per kg"/>
+                                    </TextBlock>
+                                </TextBox.ToolTip>
+                            </TextBox>
+                        </StackPanel>
+                        
+                        <TextBlock Text="ADS1115 ADC (16-bit) Configuration" FontWeight="Bold" FontSize="12" Margin="0,10,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="Zero ADC:" VerticalAlignment="Center" Width="120" FontWeight="SemiBold">
+                                <TextBlock.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="ADC value when weight is 0 kg (tare/offset)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Formula: ADC = Zero + (Weight × Sensitivity)"/>
+                                        <LineBreak/>
+                                        <Run Text="Default: -60 (for 4 channels × -15)"/>
+                                        <LineBreak/>
+                                        <Run Text="Can be negative for ADS1115 (signed)"/>
+                                    </TextBlock>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                            <TextBox x:Name="TotalZeroADC_ADS1115TextBox" Width="100" Margin="0,0,10,0" 
+                                     Text="-60" TextChanged="TotalZeroADC_ADS1115_TextChanged">
+                                <TextBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Enter the zero offset for ADS1115 ADC mode." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Range: -131072 to +131068 (signed)"/>
+                                    </TextBlock>
+                                </TextBox.ToolTip>
+                            </TextBox>
+                            <TextBlock Text="Sensitivity (ADC/kg):" VerticalAlignment="Center" Width="150" FontWeight="SemiBold" Margin="20,0,0,0">
+                                <TextBlock.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="How much ADC changes per kg of weight." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Formula: ADC = Zero + (Weight × Sensitivity)"/>
+                                        <LineBreak/>
+                                        <Run Text="Default: 100.0 (for 4 channels × 25.0)"/>
+                                    </TextBlock>
+                                </TextBlock.ToolTip>
+                            </TextBlock>
+                            <TextBox x:Name="TotalSensitivity_ADS1115TextBox" Width="100" 
+                                     Text="100.0" TextChanged="TotalSensitivity_ADS1115_TextChanged">
+                                <TextBox.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Enter the sensitivity for ADS1115 ADC mode." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Higher value = more ADC change per kg"/>
+                                    </TextBlock>
+                                </TextBox.ToolTip>
+                            </TextBox>
+                        </StackPanel>
+                        
                         <TextBlock TextWrapping="Wrap" Foreground="#FF95A5A6" FontSize="10">
                             <Run Text="Note: Individual channel configuration is available in advanced settings."/>
                             <LineBreak/>

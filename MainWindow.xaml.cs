@@ -177,6 +177,29 @@ namespace ATS_TwoWheeler_Simulator
             StatusTxCountText.Text = _txMessageCount.ToString();
             StatusRxCountText.Text = _rxMessageCount.ToString();
 
+            // Sync radio buttons with current ADC mode (from CAN commands)
+            if (InternalADCRadio != null && ADS1115Radio != null)
+            {
+                // Temporarily remove event handlers to prevent triggering mode change
+                InternalADCRadio.Checked -= ADCMode_Changed;
+                ADS1115Radio.Checked -= ADCMode_Changed;
+
+                if (_state.ADCMode == 0)
+                {
+                    InternalADCRadio.IsChecked = true;
+                    ADCModeText.Text = "Current Mode: Internal (12-bit)";
+                }
+                else
+                {
+                    ADS1115Radio.IsChecked = true;
+                    ADCModeText.Text = "Current Mode: ADS1115 (16-bit)";
+                }
+
+                // Re-attach event handlers
+                InternalADCRadio.Checked += ADCMode_Changed;
+                ADS1115Radio.Checked += ADCMode_Changed;
+            }
+
             // Update debug UI controls
             UpdateDebugControls();
         }
@@ -665,6 +688,47 @@ namespace ATS_TwoWheeler_Simulator
             _patternGenerator?.ResetPattern();
         }
 
+        // ADC Configuration Event Handlers
+        private void TotalZeroADC_Internal_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_adcSimulator == null || TotalZeroADC_InternalTextBox == null) return;
+
+            if (ushort.TryParse(TotalZeroADC_InternalTextBox.Text, out ushort value))
+            {
+                _adcSimulator.TotalZeroADC_Internal = value;
+            }
+        }
+
+        private void TotalSensitivity_Internal_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_adcSimulator == null || TotalSensitivity_InternalTextBox == null) return;
+
+            if (double.TryParse(TotalSensitivity_InternalTextBox.Text, out double value))
+            {
+                _adcSimulator.TotalSensitivity_Internal = value;
+            }
+        }
+
+        private void TotalZeroADC_ADS1115_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_adcSimulator == null || TotalZeroADC_ADS1115TextBox == null) return;
+
+            if (int.TryParse(TotalZeroADC_ADS1115TextBox.Text, out int value))
+            {
+                _adcSimulator.TotalZeroADC_ADS1115 = value;
+            }
+        }
+
+        private void TotalSensitivity_ADS1115_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_adcSimulator == null || TotalSensitivity_ADS1115TextBox == null) return;
+
+            if (double.TryParse(TotalSensitivity_ADS1115TextBox.Text, out double value))
+            {
+                _adcSimulator.TotalSensitivity_ADS1115 = value;
+            }
+        }
+
         // Noise Configuration
         private void NoiseLevel_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -763,7 +827,15 @@ namespace ATS_TwoWheeler_Simulator
             if (_adcSimulator != null)
                 _adcSimulator.CurrentMode = config.ADCMode;
 
-            // ADC configuration removed (simplified for total weight)
+            // Load ADC configuration values into UI
+            if (TotalZeroADC_InternalTextBox != null)
+                TotalZeroADC_InternalTextBox.Text = config.TotalZeroADC_Internal.ToString();
+            if (TotalSensitivity_InternalTextBox != null)
+                TotalSensitivity_InternalTextBox.Text = config.TotalSensitivity_Internal.ToString("F1");
+            if (TotalZeroADC_ADS1115TextBox != null)
+                TotalZeroADC_ADS1115TextBox.Text = config.TotalZeroADC_ADS1115.ToString();
+            if (TotalSensitivity_ADS1115TextBox != null)
+                TotalSensitivity_ADS1115TextBox.Text = config.TotalSensitivity_ADS1115.ToString("F1");
 
             NoiseLevelSlider.Value = config.NoiseLevel;
             NoiseLevelText.Text = config.NoiseLevel.ToString("F1");

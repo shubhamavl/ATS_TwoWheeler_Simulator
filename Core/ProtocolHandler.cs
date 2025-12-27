@@ -167,11 +167,13 @@ namespace ATS_TwoWheeler_Simulator.Core
         private void HandleSwitchToInternal()
         {
             _state.ADCMode = 0;
+            _adcSimulator.CurrentMode = 0;  // Sync ADCSimulator mode
         }
 
         private void HandleSwitchToADS1115()
         {
             _state.ADCMode = 1;
+            _adcSimulator.CurrentMode = 1;  // Sync ADCSimulator mode
         }
 
         private void HandleStatusRequest()
