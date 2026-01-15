@@ -13,6 +13,7 @@ namespace ATS_TwoWheeler_Simulator.Core
         // Stream state (single stream for total weight)
         private bool _streamActive = false;
         private byte _streamRate = 0x04; // Default 1kHz (0x04 for v0.1)
+        private bool _isBrakeMode = false; // False=Weight, True=Brake
 
         // System status
         private byte _systemStatus = 0; // 0=OK, 1=Warning, 2=Error, 3=Critical
@@ -56,6 +57,12 @@ namespace ATS_TwoWheeler_Simulator.Core
         {
             get { lock (_lock) { return _streamRate; } }
             set { lock (_lock) { _streamRate = value; } }
+        }
+
+        public bool IsBrakeMode
+        {
+            get { lock (_lock) { return _isBrakeMode; } }
+            set { lock (_lock) { _isBrakeMode = value; } }
         }
 
         public byte SystemStatus

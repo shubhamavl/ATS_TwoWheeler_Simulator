@@ -22,7 +22,9 @@ namespace ATS_TwoWheeler_Simulator.Core
         private const uint CAN_MSG_ID_STATUS_REQUEST = 0x032;      // Request system status
         private const uint CAN_MSG_ID_VERSION_REQUEST = 0x033;    // Request firmware version
         private const uint CAN_MSG_ID_SYSTEM_STATUS = 0x300;      // System status response
+        private const uint CAN_MSG_ID_SYSTEM_STATUS = 0x300;      // System status response
         private const uint CAN_MSG_ID_VERSION_RESPONSE = 0x301;    // Firmware version response
+        private const uint CAN_MSG_ID_SET_SYSTEM_MODE = 0x050;    // Set System Mode (Weight/Brake)
 
         // Bootloader CAN IDs (same as v2.0)
         private const uint CAN_ID_BOOT_ENTER = 0x510;
@@ -121,6 +123,10 @@ namespace ATS_TwoWheeler_Simulator.Core
                 case CAN_MSG_ID_VERSION_REQUEST:
                     HandleVersionRequest();
                     break;
+
+                case CAN_MSG_ID_SET_SYSTEM_MODE:
+                    HandleSetSystemMode(message);
+                    break;
             }
         }
 
@@ -131,17 +137,18 @@ namespace ATS_TwoWheeler_Simulator.Core
         {
             double totalWeight = _patternGenerator.CalculateTotalWeight();
             byte adcMode = _state.ADCMode;
+            bool isBrakeMode = _state.IsBrakeMode; // Get current mode
             byte[] data;
 
             if (adcMode == 0) // Internal 12-bit
             {
-                ushort totalADC = _adcSimulator.CalculateTotalADC(totalWeight, adcMode);
+                ushort totalADC = _adcSimulator.CalculateTotalADC(totalWeight, adcMode, isBrakeMode);
                 totalADC = _noiseGenerator.AddNoise(totalADC, adcMode);
                 data = new byte[] { (byte)(totalADC & 0xFF), (byte)((totalADC >> 8) & 0xFF) };
             }
             else // ADS1115 16-bit (signed)
             {
-                int totalADCSigned = _adcSimulator.CalculateTotalADCSigned(totalWeight);
+                int totalADCSigned = _adcSimulator.CalculateTotalADCSigned(totalWeight, isBrakeMode);
                 totalADCSigned = _noiseGenerator.AddNoiseSigned(totalADCSigned);
                 data = BitConverter.GetBytes(totalADCSigned);
             }
@@ -191,6 +198,22 @@ namespace ATS_TwoWheeler_Simulator.Core
         private void HandleVersionRequest()
         {
             SendVersionMessage();
+        }
+
+        private void HandleSetSystemMode(CANMessage message)
+        {
+            if (message.Data != null && message.Data.Length > 0)
+            {
+                byte mode = message.Data[0];
+                if (mode == 0x01)
+                {
+                    _state.IsBrakeMode = true;
+                }
+                else
+                {
+                    _state.IsBrakeMode = false;
+                }
+            }
         }
 
         /// <summary>
