@@ -22,7 +22,6 @@ namespace ATS_TwoWheeler_Simulator.Core
         private const uint CAN_MSG_ID_STATUS_REQUEST = 0x032;      // Request system status
         private const uint CAN_MSG_ID_VERSION_REQUEST = 0x033;    // Request firmware version
         private const uint CAN_MSG_ID_SYSTEM_STATUS = 0x300;      // System status response
-        private const uint CAN_MSG_ID_SYSTEM_STATUS = 0x300;      // System status response
         private const uint CAN_MSG_ID_VERSION_RESPONSE = 0x301;    // Firmware version response
         private const uint CAN_MSG_ID_SET_SYSTEM_MODE = 0x050;    // Set System Mode (Weight/Brake)
 
