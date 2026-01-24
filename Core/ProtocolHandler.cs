@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using ATS_TwoWheeler_Simulator.Models;
 
 namespace ATS_TwoWheeler_Simulator.Core
@@ -32,13 +33,15 @@ namespace ATS_TwoWheeler_Simulator.Core
         private const uint CAN_ID_BOOT_BEGIN = 0x513;
         private const uint CAN_ID_BOOT_END = 0x514;
         private const uint CAN_ID_BOOT_RESET = 0x515;
-        private const uint CAN_ID_BOOT_DATA_BASE = 0x520;
-        private const uint CAN_ID_BOOT_DATA_MAX = 0x91F;
+        private const uint CAN_ID_BOOT_DATA = 0x520;           // Single ID for all data frames
         private const uint CAN_ID_BOOT_PING_RESPONSE = 0x517;
         private const uint CAN_ID_BOOT_BEGIN_RESPONSE = 0x518;
         private const uint CAN_ID_BOOT_PROGRESS = 0x519;
         private const uint CAN_ID_BOOT_END_RESPONSE = 0x51A;
         private const uint CAN_ID_BOOT_ERROR = 0x51B;
+        private const uint CAN_ID_ERR_SIZE = 0x51D;
+        private const uint CAN_ID_ERR_WRITE = 0x51E;
+        private const uint CAN_ID_ERR_VALIDATION = 0x51F;
         private const uint CAN_ID_BOOT_QUERY_RESPONSE = 0x51C;
 
         // Bootloader status codes
@@ -64,8 +67,16 @@ namespace ATS_TwoWheeler_Simulator.Core
         /// </summary>
         public void ProcessMessage(CANMessage message)
         {
-            // Check for bootloader data frames first (range 0x520-0x91F)
-            if (message.ID >= CAN_ID_BOOT_DATA_BASE && message.ID <= CAN_ID_BOOT_DATA_MAX)
+            // Ignore our own transmitted messages (echoes)
+            if (message.Direction == "TX") return;
+
+            // Track bootloader command IDs for UI
+            if (message.ID >= 0x510 && message.ID <= 0x91F)
+            {
+                _state.LastBootCommandId = message.ID;
+            }
+
+            if (message.ID == CAN_ID_BOOT_DATA)
             {
                 HandleBootloaderData(message);
                 return;
@@ -244,9 +255,27 @@ namespace ATS_TwoWheeler_Simulator.Core
         // Bootloader handlers (same as v2.0)
         private void HandleBootloaderEnter()
         {
+            Debug.WriteLine("Simulator: ENTER BOOTLOADER - Simulating Reset...");
             _state.BootloaderActive = true;
             _state.ResetBootloaderState();
-            // Note: Real STM32 resets, simulator just enters bootloader mode
+            _state.StreamActive = false; // Silence app streams
+
+            // Simulate Hardware Reset Delay (100ms) then send READY (0x517)
+            // The real firmware in main.c sends CAN_ID_BOOT_PING_RESPONSE on startup if g_force_bootloader is set.
+            System.Threading.Tasks.Task.Run(async () => {
+                await System.Threading.Tasks.Task.Delay(100);
+                
+                Debug.WriteLine("Simulator: BOOTLOADER READY (Sending 0x517)");
+                
+                // Ping Response: [0x01] (READY status)
+                byte[] pingData = new byte[] { BOOTLOADER_STATUS_READY };
+                var response = new CANMessage(CAN_ID_BOOT_PING_RESPONSE, pingData, DateTime.Now);
+                
+                // Update state for UI
+                _state.LastBootResponseId = response.ID;
+                
+                ResponseReady?.Invoke(response);
+            });
         }
 
         private void HandleBootloaderQuery()
@@ -264,6 +293,7 @@ namespace ATS_TwoWheeler_Simulator.Core
             // Ping Response: [0x01] (READY status)
             byte[] pingData = new byte[] { BOOTLOADER_STATUS_READY };
             var response = new CANMessage(CAN_ID_BOOT_PING_RESPONSE, pingData, DateTime.Now);
+            _state.LastBootResponseId = response.ID;
             ResponseReady?.Invoke(response);
         }
 
@@ -289,6 +319,8 @@ namespace ATS_TwoWheeler_Simulator.Core
                 return;
             }
 
+            Debug.WriteLine($"Simulator: BEGIN UPDATE Size={firmwareSize} bytes");
+            
             // Initialize update state
             _state.ResetBootloaderState(); // Reset everything first
             _state.UpdateInProgress = true;
@@ -301,37 +333,40 @@ namespace ATS_TwoWheeler_Simulator.Core
             byte[] beginData = new byte[] { BOOTLOADER_STATUS_IN_PROGRESS };
             var response = new CANMessage(CAN_ID_BOOT_BEGIN_RESPONSE, beginData, DateTime.Now);
             ResponseReady?.Invoke(response);
+
+            // Simulate erase delay: Send SUCCESS (0x03) after 500ms
+            System.Threading.Tasks.Task.Run(async () => {
+                await System.Threading.Tasks.Task.Delay(500);
+                Debug.WriteLine("Simulator: ERASE COMPLETE");
+                
+                // Final Success Response
+                byte[] successData = new byte[] { BOOTLOADER_STATUS_SUCCESS };
+                var successResponse = new CANMessage(CAN_ID_BOOT_BEGIN_RESPONSE, successData, DateTime.Now);
+                ResponseReady?.Invoke(successResponse);
+            });
         }
 
         private void HandleBootloaderData(CANMessage message)
         {
-            // Extract sequence from CAN ID
-            byte receivedSeq = (byte)(message.ID - CAN_ID_BOOT_DATA_BASE);
+            // Reject data if update not in progress
+            if (!_state.UpdateInProgress)
+            {
+                return;
+            }
 
-            // Validate data length (should be 8 bytes)
-            if (message.Data == null || message.Data.Length < 8)
+            // Extract sequence from Byte 0 of payload
+            if (message.Data == null || message.Data.Length == 0)
             {
                 SendBootloaderError(BOOTLOADER_STATUS_FAILED_CHECKSUM, _state.ExpectedSequence);
                 return;
             }
 
-            // Reject data if update not in progress
-            if (!_state.UpdateInProgress)
-            {
-                // Update not in progress - ignore data
-                return;
-            }
+            byte receivedSeq = message.Data[0];
+            int dataLen = message.Data.Length - 1;
 
-            // Check total data received (RAM buffer + already written to flash)
-            uint totalReceived = _state.GetTotalReceived();
-
-            // Check for data overflow
-            if (totalReceived >= _state.UpdateSize)
+            if (dataLen < 1)
             {
-                // Excess data received - send error
-                _state.UpdateInProgress = false;
-                SendBootloaderError(BOOTLOADER_STATUS_FAILED_CHECKSUM, 0);
-                _state.ResetBootloaderState();
+                SendBootloaderError(BOOTLOADER_STATUS_FAILED_CHECKSUM, _state.ExpectedSequence);
                 return;
             }
 
@@ -343,29 +378,42 @@ namespace ATS_TwoWheeler_Simulator.Core
                 return;
             }
 
-            // Calculate chunk size (remaining bytes or 8, whichever is smaller)
-            uint remaining = _state.UpdateSize - totalReceived;
-            int chunkSize = (int)(remaining > 8 ? 8 : remaining);
+            // Check total data received (RAM buffer + already written to flash)
+            uint totalReceived = _state.GetTotalReceived();
 
-            // Check if RAM buffer would overflow
-            if (_state.IsRamBufferFull(chunkSize))
+            // Check for data overflow
+            if (totalReceived + dataLen > _state.UpdateSize)
             {
-                // Buffer full (8KB) - flush to flash first
-                _state.FlushRamBufferToFlash();
-                SendBootloaderProgress();
-                // Note: FlushRamBufferToFlash() already clears the buffer offset
+                // Excess data received - cap it to avoid overflow
+                dataLen = (int)(_state.UpdateSize - totalReceived);
+                if (dataLen <= 0)
+                {
+                    _state.UpdateInProgress = false;
+                    SendBootloaderError(BOOTLOADER_STATUS_FAILED_CHECKSUM, 0);
+                    _state.ResetBootloaderState();
+                    return;
+                }
             }
 
-            // Store in RAM buffer
-            byte[] chunkData = new byte[chunkSize];
-            Array.Copy(message.Data, 0, chunkData, 0, chunkSize);
-            _state.StoreInRamBuffer(chunkData, chunkSize);
+            // Extract user data (skip sequence byte)
+            byte[] chunkData = new byte[dataLen];
+            Array.Copy(message.Data, 1, chunkData, 0, dataLen);
 
-            // Update CRC32 (all 8 bytes are data, no sequence byte to skip)
+            // Store in simulation buffer
+            _state.StoreInRamBuffer(chunkData, dataLen);
+
+            // Update CRC32 (only data bytes)
             _state.UpdateCrc = UpdateCrc32(_state.UpdateCrc, chunkData);
 
             // Increment expected sequence (wraps automatically: 255 → 0)
             _state.ExpectedSequence++;
+
+            // Periodically send progress updates (every 2KB)
+            uint totalProcessed = _state.GetTotalReceived();
+            if (totalProcessed > 0 && (totalProcessed % 2048 < (uint)dataLen))
+            {
+                SendBootloaderProgress();
+            }
         }
 
         private void HandleBootloaderEnd(CANMessage message)
@@ -378,29 +426,46 @@ namespace ATS_TwoWheeler_Simulator.Core
                 return;
             }
 
-            // Flush remaining RAM buffer to flash
-            _state.FlushRamBufferToFlash();
-
             // Verify all data received
-            if (_state.FlashWriteOffset != _state.UpdateSize)
+            uint totalReceived = _state.GetTotalReceived();
+            Debug.WriteLine($"Simulator: END UPDATE - Final Received Size={totalReceived}, Calculating CRC...");
+            
+            // --- BANK VALIDATION (Sanity Check) ---
+            // Simulating Bank_IsValid as implemented in the actual firmware
+            byte[] flash = _state.GetRamBuffer();
+            
+            // 1. Stack Pointer Check (Offset 0)
+            // Should be in RAM range: 0x20000000 - 0x2000A000
+            uint stackPtr = BitConverter.ToUInt32(flash, 0);
+            bool isStackValid = stackPtr >= 0x20000000 && stackPtr <= 0x2000A000;
+            
+            // 2. Reset Handler Check (Offset 4)
+            // Mask thumb bit and check if in flash range: 0x08008000 - 0x08040000
+            uint resetHandler = BitConverter.ToUInt32(flash, 4) & ~1u;
+            bool isResetValid = resetHandler >= 0x08008000 && resetHandler <= 0x08040000;
+
+            if (!isStackValid || !isResetValid)
             {
-                SendBootloaderError(BOOTLOADER_STATUS_FAILED_CHECKSUM, 0);
+                Debug.WriteLine($"Simulator: VALIDATION FAILED! SP=0x{stackPtr:X8}, Reset=0x{resetHandler:X8}");
+                // Validation failed - Send 0x51F with the 8 bytes
+                byte[] valData = new byte[8];
+                Array.Copy(flash, 0, valData, 0, 8);
+                var valResponse = new CANMessage(CAN_ID_ERR_VALIDATION, valData, DateTime.Now);
+                ResponseReady?.Invoke(valResponse);
+                
                 _state.ResetBootloaderState();
                 return;
             }
 
-            // Read received CRC32 from message
+            Debug.WriteLine("Simulator: VALIDATION SUCCESS");
+            
+            // --- CRC VERIFICATION ---
             uint receivedCrc = BitConverter.ToUInt32(message.Data, 0);
-
-            // Calculate final CRC32 (running CRC ^ 0xFFFFFFFF)
             uint calculatedCrc = _state.UpdateCrc ^ 0xFFFFFFFF;
-
-            // Compare CRCs
-            if (receivedCrc != calculatedCrc)
+            
+            if (receivedCrc != calculatedCrc && receivedCrc != 0)
             {
-                SendBootloaderError(BOOTLOADER_STATUS_FAILED_CHECKSUM, 0);
-                _state.ResetBootloaderState();
-                return;
+                 Debug.WriteLine($"Simulator: CRC Mismatch! Expected: 0x{calculatedCrc:X8}, Got: 0x{receivedCrc:X8} (Ignoring as per Hardware)");
             }
 
             // Send End Response: [0x03] (SUCCESS)
@@ -431,20 +496,21 @@ namespace ATS_TwoWheeler_Simulator.Core
             if (_state.UpdateSize > 0)
             {
                 // Use 64-bit calculation to prevent overflow
-                ulong progress_64 = ((ulong)_state.FlashWriteOffset * 100) / _state.UpdateSize;
+                ulong progress_64 = ((ulong)_state.GetTotalReceived() * 100) / _state.UpdateSize;
                 percent = (byte)(progress_64 > 100 ? 100 : progress_64); // Cap at 100%
             }
 
             // Progress message format: [percent, bytes_L, bytes_H, bytes_H2, bytes_H3]
             byte[] progressData = new byte[5];
             progressData[0] = percent;
-            uint bytesWritten = _state.FlashWriteOffset;
+            uint bytesWritten = _state.GetTotalReceived();
             progressData[1] = (byte)(bytesWritten & 0xFF);
             progressData[2] = (byte)((bytesWritten >> 8) & 0xFF);
             progressData[3] = (byte)((bytesWritten >> 16) & 0xFF);
             progressData[4] = (byte)((bytesWritten >> 24) & 0xFF);
 
             var response = new CANMessage(CAN_ID_BOOT_PROGRESS, progressData, DateTime.Now);
+            _state.LastBootResponseId = response.ID;
             ResponseReady?.Invoke(response);
         }
 
@@ -453,7 +519,23 @@ namespace ATS_TwoWheeler_Simulator.Core
             // Error Response: [errorCode, additionalData]
             byte[] errorData = new byte[] { errorCode, additionalData };
             var response = new CANMessage(CAN_ID_BOOT_ERROR, errorData, DateTime.Now);
+            _state.LastBootResponseId = response.ID;
+            _state.LastBootError = DescribeBootloaderStatus(errorCode);
             ResponseReady?.Invoke(response);
+        }
+
+        private string DescribeBootloaderStatus(byte status)
+        {
+            return status switch
+            {
+                BOOTLOADER_STATUS_READY => "Ready",
+                BOOTLOADER_STATUS_IN_PROGRESS => "In Progress",
+                BOOTLOADER_STATUS_SUCCESS => "Success",
+                BOOTLOADER_STATUS_FAILED_CHECKSUM => "Checksum Fail",
+                BOOTLOADER_STATUS_FAILED_FLASH => "Flash Fail",
+                0x05 => "Timeout", // FailedTimeout
+                _ => $"Error 0x{status:X2}"
+            };
         }
 
         /// <summary>

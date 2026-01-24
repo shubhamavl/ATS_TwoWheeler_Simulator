@@ -31,9 +31,12 @@ namespace ATS_TwoWheeler_Simulator.Core
         private uint _updateSize = 0;
         private uint _flashWriteOffset = 0;
         private byte _expectedSequence = 0;
+        private uint _lastBootCommandId = 0;
+        private uint _lastBootResponseId = 0;
+        private string _lastBootError = "None";
 
-        // 8KB RAM buffer for firmware update simulation
-        private const int RAM_BUFFER_SIZE = 8192; // 8KB
+        // 128KB RAM buffer for firmware update simulation (supports Bank A limit of 120KB)
+        private const int RAM_BUFFER_SIZE = 131072; // 128KB
         private byte[] _ramBuffer = new byte[RAM_BUFFER_SIZE];
         private int _ramBufferOffset = 0;
         private uint _updateCrc = 0xFFFFFFFF;
@@ -161,6 +164,24 @@ namespace ATS_TwoWheeler_Simulator.Core
             set { lock (_lock) { _updateCrc = value; } }
         }
 
+        public uint LastBootCommandId
+        {
+            get { lock (_lock) { return _lastBootCommandId; } }
+            set { lock (_lock) { _lastBootCommandId = value; } }
+        }
+
+        public uint LastBootResponseId
+        {
+            get { lock (_lock) { return _lastBootResponseId; } }
+            set { lock (_lock) { _lastBootResponseId = value; } }
+        }
+
+        public string LastBootError
+        {
+            get { lock (_lock) { return _lastBootError; } }
+            set { lock (_lock) { _lastBootError = value; } }
+        }
+
         /// <summary>
         /// Reset all bootloader state variables
         /// </summary>
@@ -173,8 +194,19 @@ namespace ATS_TwoWheeler_Simulator.Core
                 _flashWriteOffset = 0;
                 _ramBufferOffset = 0;
                 _expectedSequence = 0;
-                _updateCrc = 0xFFFFFFFF;
-                Array.Fill(_ramBuffer, (byte)0xFF);
+            }
+        }
+
+        /// <summary>
+        /// Get a copy of the RAM buffer for validation
+        /// </summary>
+        public byte[] GetRamBuffer()
+        {
+            lock (_lock)
+            {
+                byte[] copy = new byte[RAM_BUFFER_SIZE];
+                Array.Copy(_ramBuffer, copy, RAM_BUFFER_SIZE);
+                return copy;
             }
         }
 

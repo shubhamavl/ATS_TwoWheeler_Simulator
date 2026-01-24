@@ -135,6 +135,7 @@ namespace ATS_TwoWheeler_Simulator
             UpdateConnectionStatus();
             UpdateADCValues();
             UpdateSystemStatus();
+            UpdateBootloaderDiagnostics();
         }
 
         private void UpdateConnectionStatus()
@@ -206,6 +207,84 @@ namespace ATS_TwoWheeler_Simulator
 
             // Update debug UI controls
             UpdateDebugControls();
+        }
+
+        private void UpdateBootloaderDiagnostics()
+        {
+            if (_state == null) return;
+
+            // Active Status
+            if (BootloaderActiveText != null)
+            {
+                BootloaderActiveText.Text = _state.BootloaderActive ? "Yes" : "No";
+                BootloaderActiveText.Foreground = new SolidColorBrush(_state.BootloaderActive ? Colors.Green : Colors.Red);
+            }
+
+            // Phase
+            if (BootloaderPhaseText != null)
+            {
+                string phase = "Idle";
+                if (_state.BootloaderActive)
+                {
+                    if (_state.UpdateInProgress)
+                    {
+                        // Deduce phase from progress
+                        if (_state.GetTotalReceived() == 0) phase = "Erasing...";
+                        else phase = "Transferring...";
+                    }
+                    else if (_state.LastBootCommandId == 0x514) // END_UPDATE
+                    {
+                        phase = "Verifying...";
+                    }
+                    else
+                    {
+                        phase = "Ready";
+                    }
+                }
+                BootloaderPhaseText.Text = phase;
+            }
+
+            // CAN IDs
+            if (LastBootCmdText != null)
+            {
+                LastBootCmdText.Text = _state.LastBootCommandId == 0 ? "0x000" : $"0x{_state.LastBootCommandId:X3}";
+            }
+            if (LastBootRespText != null)
+            {
+                LastBootRespText.Text = _state.LastBootResponseId == 0 ? "0x000" : $"0x{_state.LastBootResponseId:X3}";
+            }
+
+            // Sequence and Error
+            if (BootSequenceText != null)
+            {
+                BootSequenceText.Text = _state.ExpectedSequence.ToString();
+            }
+            if (LastBootErrorText != null)
+            {
+                LastBootErrorText.Text = _state.LastBootError;
+                LastBootErrorText.Foreground = new SolidColorBrush(_state.LastBootError == "None" ? Colors.Gray : Colors.Red);
+            }
+
+            // Progress Bar
+            if (BootloaderProgressBar != null && BootloaderProgressPctText != null && BootloaderBytesText != null)
+            {
+                if (_state.UpdateSize > 0)
+                {
+                    uint received = _state.GetTotalReceived();
+                    double pct = (double)received * 100 / _state.UpdateSize;
+                    if (pct > 100) pct = 100;
+
+                    BootloaderProgressBar.Value = pct;
+                    BootloaderProgressPctText.Text = $"{(int)pct}%";
+                    BootloaderBytesText.Text = $"{received} / {_state.UpdateSize} bytes";
+                }
+                else
+                {
+                    BootloaderProgressBar.Value = 0;
+                    BootloaderProgressPctText.Text = "0%";
+                    BootloaderBytesText.Text = "0 / 0 bytes";
+                }
+            }
         }
 
         private void UpdateDebugControls()
