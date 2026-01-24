@@ -595,6 +595,19 @@
                             <TextBlock Margin="0,0,0,5">
                                 <TextBlock.ToolTip>
                                     <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Current System Mode." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Weight Mode = Standard weighing"/>
+                                        <LineBreak/>
+                                        <Run Text="Brake Force Mode = Braking test"/>
+                                    </TextBlock>
+                                </TextBlock.ToolTip>
+                                <Run Text="System Mode: " FontWeight="SemiBold"/>
+                                <Run x:Name="StatusSystemModeText" Text="Total Weight" Foreground="#FF27AE60"/>
+                            </TextBlock>
+                            <TextBlock Margin="0,0,0,5">
+                                <TextBlock.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
                                         <Run Text="Total weight data stream status." FontWeight="Bold"/>
                                         <LineBreak/>
                                         <Run Text="Stopped (Red) = No data being sent"/>

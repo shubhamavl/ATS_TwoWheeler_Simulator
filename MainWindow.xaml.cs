@@ -169,6 +169,10 @@ namespace ATS_TwoWheeler_Simulator
             if (_state == null) return;
 
             StatusADCModeText.Text = _state.ADCMode == 0 ? "Internal (12-bit)" : "ADS1115 (16-bit)";
+            
+            StatusSystemModeText.Text = _state.IsBrakeMode ? "Brake Force" : "Total Weight";
+            StatusSystemModeText.Foreground = new SolidColorBrush(_state.IsBrakeMode ? Colors.OrangeRed : Colors.Green);
+
             StatusStreamText.Text = _state.StreamActive ? $"Active ({GetRateText(_state.StreamRate)})" : "Stopped";
             StatusStreamText.Foreground = new SolidColorBrush(_state.StreamActive ? Colors.Green : Colors.Red);
 
