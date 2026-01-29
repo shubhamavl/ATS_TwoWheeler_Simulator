@@ -24,6 +24,7 @@ namespace ATS_TwoWheeler_Simulator.Core
         private const uint CAN_MSG_ID_VERSION_REQUEST = 0x033;    // Request firmware version
         private const uint CAN_MSG_ID_SYSTEM_STATUS = 0x300;      // System status response
         private const uint CAN_MSG_ID_VERSION_RESPONSE = 0x301;    // Firmware version response
+        private const uint CAN_MSG_ID_SYS_PERF = 0x302;           // System performance metrics
         private const uint CAN_MSG_ID_SET_SYSTEM_MODE = 0x050;    // Set System Mode (Weight/Brake)
 
         // Bootloader CAN IDs (same as v2.0)
@@ -60,6 +61,9 @@ namespace ATS_TwoWheeler_Simulator.Core
             _adcSimulator = adcSimulator;
             _patternGenerator = patternGenerator;
             _noiseGenerator = noiseGenerator;
+
+            // Set default version to 0.2.0.0 to match latest firmware
+            _state.FirmwareVersion = (0, 2, 0, 0);
         }
 
         /// <summary>
@@ -195,14 +199,7 @@ namespace ATS_TwoWheeler_Simulator.Core
 
         private void HandleStatusRequest()
         {
-            byte[] statusData = new byte[]
-            {
-                _state.SystemStatus,
-                _state.ErrorFlags,
-                _state.ADCMode
-            };
-            var response = new CANMessage(CAN_MSG_ID_SYSTEM_STATUS, statusData, DateTime.Now);
-            ResponseReady?.Invoke(response);
+            SendStatusMessage();
         }
 
         private void HandleVersionRequest()
@@ -224,20 +221,51 @@ namespace ATS_TwoWheeler_Simulator.Core
                     _state.IsBrakeMode = false;
                 }
             }
+            // In firmware, a mode change also triggers a status response
+            SendStatusMessage();
         }
 
         /// <summary>
-        /// Send status message automatically (for periodic updates)
+        /// Send status message automatically (v1.1 - 6 bytes packed)
         /// </summary>
         public void SendStatusMessage()
         {
-            byte[] statusData = new byte[]
-            {
-                _state.SystemStatus,
-                _state.ErrorFlags,
-                _state.ADCMode
-            };
+            // Byte 0: status_packed (Bit 0-1: status, Bit 2: adc_mode, Bit 3: relay_state)
+            byte statusPacked = (byte)(_state.SystemStatus & 0x03);
+            if (_state.ADCMode == 1) statusPacked |= 0x04; // Bit 2: ADC mode (0=INT, 1=ADS)
+            if (_state.IsBrakeMode) statusPacked |= 0x08;  // Bit 3: Relay state (0=OFF, 1=ON)
+
+            byte[] statusData = new byte[6];
+            statusData[0] = statusPacked;
+            statusData[1] = _state.ErrorFlags;
+            
+            uint uptime = _state.UptimeSeconds;
+            byte[] uptimeBytes = BitConverter.GetBytes(uptime);
+            Array.Copy(uptimeBytes, 0, statusData, 2, 4);
+
             var response = new CANMessage(CAN_MSG_ID_SYSTEM_STATUS, statusData, DateTime.Now);
+            ResponseReady?.Invoke(response);
+        }
+
+        /// <summary>
+        /// Send performance message (v1.1 - 4 bytes)
+        /// </summary>
+        public void SendPerformanceMessage()
+        {
+            ushort canHz = _state.CanTxHz;
+            ushort adcHz = _state.AdcSampleHz;
+
+            // If zero, simulate realistic values
+            if (canHz == 0) canHz = (ushort)(_state.StreamActive ? 1000 : 0);
+            if (adcHz == 0) adcHz = 1000;
+
+            byte[] perfData = new byte[4];
+            perfData[0] = (byte)(canHz & 0xFF);
+            perfData[1] = (byte)((canHz >> 8) & 0xFF);
+            perfData[2] = (byte)(adcHz & 0xFF);
+            perfData[3] = (byte)((adcHz >> 8) & 0xFF);
+
+            var response = new CANMessage(CAN_MSG_ID_SYS_PERF, perfData, DateTime.Now);
             ResponseReady?.Invoke(response);
         }
 

@@ -12,7 +12,7 @@ namespace ATS_TwoWheeler_Simulator.Core
 
         // Stream state (single stream for total weight)
         private bool _streamActive = false;
-        private byte _streamRate = 0x04; // Default 1kHz (0x04 for v0.1)
+        private byte _streamRate = 0x03; // Default 1kHz (v0.2 mapping)
         private bool _isBrakeMode = false; // False=Weight, True=Brake
 
         // System status
@@ -34,6 +34,12 @@ namespace ATS_TwoWheeler_Simulator.Core
         private uint _lastBootCommandId = 0;
         private uint _lastBootResponseId = 0;
         private string _lastBootError = "None";
+
+        // Uptime and Performance
+        private uint _uptimeSeconds = 0;
+        private ushort _canTxHz = 0;
+        private ushort _adcSampleHz = 0;
+        private DateTime _startTime = DateTime.Now;
 
         // 128KB RAM buffer for firmware update simulation (supports Bank A limit of 120KB)
         private const int RAM_BUFFER_SIZE = 131072; // 128KB
@@ -101,6 +107,31 @@ namespace ATS_TwoWheeler_Simulator.Core
             }
         }
 
+        public uint UptimeSeconds
+        {
+            get 
+            { 
+                lock (_lock) 
+                { 
+                    // Update uptime based on start time for accuracy
+                    _uptimeSeconds = (uint)(DateTime.Now - _startTime).TotalSeconds;
+                    return _uptimeSeconds; 
+                } 
+            }
+        }
+
+        public ushort CanTxHz
+        {
+            get { lock (_lock) { return _canTxHz; } }
+            set { lock (_lock) { _canTxHz = value; } }
+        }
+
+        public ushort AdcSampleHz
+        {
+            get { lock (_lock) { return _adcSampleHz; } }
+            set { lock (_lock) { _adcSampleHz = value; } }
+        }
+
         /// <summary>
         /// Stop all active streams
         /// </summary>
@@ -119,10 +150,10 @@ namespace ATS_TwoWheeler_Simulator.Core
         {
             return rate switch
             {
-                0x01 => 1000,  // 1Hz = 1000ms
-                0x02 => 10,    // 100Hz = 10ms
-                0x03 => 2,     // 500Hz = 2ms
-                0x04 => 1,     // 1kHz = 1ms
+                0x01 => 10,    // 100Hz = 10ms
+                0x02 => 2,     // 500Hz = 2ms
+                0x03 => 1,     // 1kHz = 1ms
+                0x05 => 1000,  // 1Hz = 1000ms
                 _ => 1         // Default 1kHz
             };
         }

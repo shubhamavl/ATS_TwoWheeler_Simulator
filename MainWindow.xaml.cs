@@ -35,6 +35,7 @@ namespace ATS_TwoWheeler_Simulator
 
         // UI update timer
         private DispatcherTimer? _uiUpdateTimer;
+        private DispatcherTimer? _heartbeatTimer;
         private long _txMessageCount = 0;
         private long _rxMessageCount = 0;
 
@@ -46,6 +47,7 @@ namespace ATS_TwoWheeler_Simulator
             LoadConfiguration();
             InitializeVersionDisplay();
             StartUIUpdateTimer();
+            StartHeartbeatTimer();
             // Debug controls are initialized via LoadConfiguration() -> UpdateSystemStatus() -> UpdateDebugControls()
         }
 
@@ -179,6 +181,11 @@ namespace ATS_TwoWheeler_Simulator
 
             var (major, minor, patch, build) = _state.FirmwareVersion;
             StatusFirmwareText.Text = $"{major}.{minor}.{patch}.{build}";
+            
+            // Show Uptime and Perf if UI elements exist
+            if (StatusUptimeText != null) StatusUptimeText.Text = FormatUptime(_state.UptimeSeconds);
+            if (StatusPerfText != null) StatusPerfText.Text = $"{_state.CanTxHz} / {_state.AdcSampleHz} Hz";
+
             StatusTxCountText.Text = _txMessageCount.ToString();
             StatusRxCountText.Text = _rxMessageCount.ToString();
 
@@ -208,6 +215,29 @@ namespace ATS_TwoWheeler_Simulator
             // Update debug UI controls
             UpdateDebugControls();
         }
+
+        private void StartHeartbeatTimer()
+        {
+            _heartbeatTimer = new DispatcherTimer();
+            _heartbeatTimer.Interval = TimeSpan.FromSeconds(1);
+            _heartbeatTimer.Tick += (s, e) => {
+                if (_state != null && _adapter != null && _adapter.IsConnected)
+                {
+                    // Update performance metrics based on current state
+                    _state.CanTxHz = (ushort)(_state.StreamActive ? (1000 / STM32State.GetRateIntervalMs(_state.StreamRate)) : 0);
+                    _state.AdcSampleHz = 1000; // Simulated constant 1kHz ADC loop
+                }
+            };
+            _heartbeatTimer.Start();
+        }
+
+        private string FormatUptime(uint seconds)
+        {
+            TimeSpan t = TimeSpan.FromSeconds(seconds);
+            return string.Format("{0:D2}h {1:D2}m {2:D2}s", 
+                (int)t.TotalHours, t.Minutes, t.Seconds);
+        }
+
 
         private void UpdateBootloaderDiagnostics()
         {
@@ -396,10 +426,10 @@ namespace ATS_TwoWheeler_Simulator
         {
             return rate switch
             {
-                0x01 => "1Hz",
-                0x02 => "100Hz",
-                0x03 => "500Hz",
-                0x04 => "1kHz",
+                0x01 => "100Hz",
+                0x02 => "500Hz",
+                0x03 => "1kHz",
+                0x05 => "1Hz",
                 _ => "Unknown"
             };
         }

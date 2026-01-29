@@ -618,6 +618,17 @@
                                 <Run Text="Stream: " FontWeight="SemiBold"/>
                                 <Run x:Name="StatusStreamText" Text="Stopped" Foreground="#FFE74C3C"/>
                             </TextBlock>
+                            <TextBlock Margin="0,0,0,5">
+                                <TextBlock.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="Simulated system uptime." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Increases every second while the simulator is running."/>
+                                    </TextBlock>
+                                </TextBlock.ToolTip>
+                                <Run Text="Uptime: " FontWeight="SemiBold"/>
+                                <Run x:Name="StatusUptimeText" Text="00h 00m 00s"/>
+                            </TextBlock>
                         </StackPanel>
                         <StackPanel Grid.Column="1">
                             <TextBlock Margin="0,0,0,5">
@@ -656,6 +667,17 @@
                                 </TextBlock.ToolTip>
                                 <Run Text="Messages RX: " FontWeight="SemiBold"/>
                                 <Run x:Name="StatusRxCountText" Text="0"/>
+                            </TextBlock>
+                            <TextBlock Margin="0,0,0,5">
+                                <TextBlock.ToolTip>
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="300">
+                                        <Run Text="System performance metrics (Raw)." FontWeight="Bold"/>
+                                        <LineBreak/>
+                                        <Run Text="Format: CAN TX / ADC Sample (Hz)"/>
+                                    </TextBlock>
+                                </TextBlock.ToolTip>
+                                <Run Text="Perf: " FontWeight="SemiBold"/>
+                                <Run x:Name="StatusPerfText" Text="0 / 1000 Hz"/>
                             </TextBlock>
                         </StackPanel>
                     </Grid>
